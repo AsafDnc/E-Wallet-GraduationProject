@@ -1,0 +1,66 @@
+Project: E-Wallet (PWA/Offline-Supported Mobile Wallet Application)
+Role: Senior Software Architect & Flutter Developer
+1. Core Technologies and Standards
+Framework: Flutter (Material 3 design standards, minimalist interface).
+
+Language: Dart (Null safety MUST STRICTLY be enabled).
+
+Type safety is essential. The dynamic type CANNOT be used.
+
+Class and variable naming must be descriptive and self-explanatory.
+
+Backend & Database: Supabase Flutter SDK (Auth, PostgreSQL database).
+
+State Management: Riverpod (flutter_riverpod or hooks_riverpod).
+
+Routing: GoRouter (For page navigation and transitions).
+
+Offline Storage (Offline First): Isar Database (For offline functionality).
+
+Push Notifications: Firebase Cloud Messaging (FCM).
+
+Automation: Supabase pg_cron (For automatic subscription deductions).
+
+Data Visualization: fl_chart (Pie and bar charts).
+
+2. Category-Based Directory Structure (Feature-First Clean Architecture)
+The project must strictly follow a "Feature-First" and organized structure. All code under the lib/ directory must be separated using the following logic:
+
+lib/core/: The heart of the application. Foundational structures used by all modules.
+
+/theme (Colors, typography)
+
+/network (Supabase, Isar connection configurations)
+
+/constants (Constant values, API keys)
+
+/utils (Formatters, helper functions)
+
+/error (Custom error classes)
+
+lib/shared/: Common UI components used across multiple screens.
+
+/widgets (CustomButton, CustomTextField, etc.)
+
+lib/features/: The core of the business logic. Each feature must be isolated within its own folder.
+
+Example: /auth, /budget, /subscriptions, /goals
+
+The internal structure of each feature MUST BE CATEGORIZED as follows:
+
+presentation/: Screens and widgets specific to that feature.
+
+domain/: Data models (Entities) and business rules (Use cases).
+
+data/: Data sources (Isar Local, Supabase Remote) and Repository classes.
+
+providers/: Riverpod State Notifiers specific to that feature.
+
+3. Development Rules and Coding Style
+Separation of UI and Business Logic: Heavy business logic cannot be written inside Screen and Widget files. The UI is strictly for displaying data; operations and state modifications must be handled within the Riverpod classes in the providers/ directory.
+
+Error Handling: - Deeply nested if-else blocks are FORBIDDEN. "Guard Clause" and "Early Return" patterns must be utilized.
+
+try/catch blocks must strictly be used in all API or database operations.
+
+Performance: The const keyword MUST strictly be used EVERYWHERE possible (widgets, paddings, texts) to prevent Flutter from unnecessarily redrawing (rebuilding) the screen.
