@@ -17,7 +17,7 @@ class SubscriptionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(subscriptionsProvider);
-    final total = ref.watch(subscriptionsTotalMonthlyProvider);
+    final total = items.fold<double>(0, (sum, item) => sum + item.monthlyPrice);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0D12),

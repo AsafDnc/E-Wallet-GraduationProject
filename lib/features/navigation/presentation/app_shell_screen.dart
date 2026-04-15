@@ -17,6 +17,10 @@ class AppShellScreen extends StatefulWidget {
 class _AppShellScreenState extends State<AppShellScreen> {
   int _currentIndex = 0;
 
+  void _onBackToHome() {
+    setState(() => _currentIndex = 0);
+  }
+
   void _openEntrySelectionSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -50,25 +54,40 @@ class _AppShellScreenState extends State<AppShellScreen> {
           IndexedStack(
             index: _currentIndex,
             children: [
-              const HomeScreen(showBottomNav: false),
-              GoalsScreen(onBackTap: () => setState(() => _currentIndex = 0)),
-              const _ShellPlaceholder(),
-              SubscriptionsScreen(
-                onBackTap: () => setState(() => _currentIndex = 0),
+              TickerMode(
+                enabled: _currentIndex == 0,
+                child: const HomeScreen(showBottomNav: false),
               ),
-              const _ShellPlaceholder(),
+              TickerMode(
+                enabled: _currentIndex == 1,
+                child: GoalsScreen(onBackTap: _onBackToHome),
+              ),
+              TickerMode(
+                enabled: _currentIndex == 2,
+                child: const _ShellPlaceholder(),
+              ),
+              TickerMode(
+                enabled: _currentIndex == 3,
+                child: SubscriptionsScreen(onBackTap: _onBackToHome),
+              ),
+              TickerMode(
+                enabled: _currentIndex == 4,
+                child: const _ShellPlaceholder(),
+              ),
             ],
           ),
-          FloatingBottomNav(
-            selectedIndex: _currentIndex,
-            onIndexChanged: (index) {
-              if (index == 2) {
-                _openEntrySelectionSheet();
-                return;
-              }
-              if (index == _currentIndex) return;
-              setState(() => _currentIndex = index);
-            },
+          RepaintBoundary(
+            child: FloatingBottomNav(
+              selectedIndex: _currentIndex,
+              onIndexChanged: (index) {
+                if (index == 2) {
+                  _openEntrySelectionSheet();
+                  return;
+                }
+                if (index == _currentIndex) return;
+                setState(() => _currentIndex = index);
+              },
+            ),
           ),
         ],
       ),

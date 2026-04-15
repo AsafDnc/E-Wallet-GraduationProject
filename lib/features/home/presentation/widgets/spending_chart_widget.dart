@@ -63,7 +63,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
 
   @override
   Widget build(BuildContext context) {
-    final data = ref.watch(homeProvider).spendingFlowData;
+    final data = ref.watch(homeProvider.select((s) => s.spendingFlowData));
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
@@ -83,16 +83,18 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
             ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 180,
-            child: FadeTransition(
-              // The whole chart fades in once; the indicator uses its own anim.
-              opacity: const AlwaysStoppedAnimation(1.0),
-              child: LineChart(
-                _buildChartData(data),
-                // Smooth out position updates when the finger moves.
-                duration: const Duration(milliseconds: 80),
-                curve: Curves.easeOutCubic,
+          RepaintBoundary(
+            child: SizedBox(
+              height: 180,
+              child: FadeTransition(
+                // The whole chart fades in once; the indicator uses its own anim.
+                opacity: const AlwaysStoppedAnimation(1.0),
+                child: LineChart(
+                  _buildChartData(data),
+                  // Smooth out position updates when the finger moves.
+                  duration: const Duration(milliseconds: 80),
+                  curve: Curves.easeOutCubic,
+                ),
               ),
             ),
           ),

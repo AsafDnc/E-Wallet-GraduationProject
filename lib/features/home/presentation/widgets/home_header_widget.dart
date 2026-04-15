@@ -12,7 +12,12 @@ class HomeHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(homeProvider);
+    final header = ref.watch(
+      homeProvider.select(
+        (s) =>
+            (s.userName, s.balance, s.balanceChangePercent, s.isBalanceVisible),
+      ),
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,12 +26,12 @@ class HomeHeaderWidget extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _GreetingText(userName: state.userName),
+              _GreetingText(userName: header.$1),
               const SizedBox(height: 6),
               _BalanceRow(
-                balance: state.balance,
-                changePercent: state.balanceChangePercent,
-                isVisible: state.isBalanceVisible,
+                balance: header.$2,
+                changePercent: header.$3,
+                isVisible: header.$4,
                 onToggleVisibility: () =>
                     ref.read(homeProvider.notifier).toggleBalanceVisibility(),
               ),
@@ -62,7 +67,7 @@ class _GreetingText extends StatelessWidget {
   }
 }
 
-class _BalanceRow extends StatelessWidget {
+class _BalanceRow extends StatefulWidget {
   const _BalanceRow({
     required this.balance,
     required this.changePercent,
@@ -75,8 +80,16 @@ class _BalanceRow extends StatelessWidget {
   final bool isVisible;
   final VoidCallback onToggleVisibility;
 
+  @override
+  State<_BalanceRow> createState() => _BalanceRowState();
+}
+
+class _BalanceRowState extends State<_BalanceRow> {
+  String? _cachedWidthKey;
+  double? _cachedVisibleWidth;
+
   String get _formattedBalance {
-    final parts = balance.toStringAsFixed(0).split('');
+    final parts = widget.balance.toStringAsFixed(0).split('');
     final buffer = StringBuffer('\$');
     for (int i = 0; i < parts.length; i++) {
       if (i > 0 && (parts.length - i) % 3 == 0) buffer.write(',');
@@ -86,13 +99,18 @@ class _BalanceRow extends StatelessWidget {
   }
 
   /// Returns the digits-only portion of the balance (no $ or commas).
-  String get _digitsOnly => balance.toStringAsFixed(0);
+  String get _digitsOnly => widget.balance.toStringAsFixed(0);
 
   @override
   Widget build(BuildContext context) {
     // The SizedBox is always sized to the visible formatted balance so the
     // badge and eye icon never shift regardless of visibility state.
-    final visibleWidth = _measureTextWidth(_formattedBalance, _balanceStyle);
+    final formatted = _formattedBalance;
+    if (_cachedWidthKey != formatted) {
+      _cachedWidthKey = formatted;
+      _cachedVisibleWidth = _measureTextWidth(formatted, _balanceStyle);
+    }
+    final visibleWidth = _cachedVisibleWidth!;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -113,8 +131,8 @@ class _BalanceRow extends StatelessWidget {
               ),
               // Visible layer: real balance or masked version.
               Text(
-                isVisible
-                    ? _formattedBalance
+                widget.isVisible
+                    ? formatted
                     // Always keep the $ sign; mask only the digit characters.
                     : '\$${'*' * _digitsOnly.length}',
                 style: _balanceStyle,
@@ -125,12 +143,12 @@ class _BalanceRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        _PercentBadge(percent: changePercent),
+        _PercentBadge(percent: widget.changePercent),
         const SizedBox(width: 5),
         GestureDetector(
-          onTap: onToggleVisibility,
+          onTap: widget.onToggleVisibility,
           child: Icon(
-            isVisible
+            widget.isVisible
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
             color: Colors.white38,
