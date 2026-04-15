@@ -31,24 +31,34 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: _hPad),
-              child: HomeHeaderWidget(),
+            RepaintBoundary(
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: _hPad),
+                child: HomeHeaderWidget(),
+              ),
             ),
             const SizedBox(height: 28),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: _hPad),
-              child: SpendingChartWidget(),
+            RepaintBoundary(
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: _hPad),
+                child: SpendingChartWidget(),
+              ),
             ),
             const SizedBox(height: 28),
-            const UpcomingSubsWidget(horizontalPadding: _hPad),
+            RepaintBoundary(
+              child: const UpcomingSubsWidget(horizontalPadding: _hPad),
+            ),
             const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: _hPad),
-              child: AiBotCardWidget(),
+            RepaintBoundary(
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: _hPad),
+                child: AiBotCardWidget(),
+              ),
             ),
             const SizedBox(height: 28),
-            RecentTransactionsWidget(horizontalPadding: _hPad),
+            RepaintBoundary(
+              child: RecentTransactionsWidget(horizontalPadding: _hPad),
+            ),
           ],
         ),
       ),

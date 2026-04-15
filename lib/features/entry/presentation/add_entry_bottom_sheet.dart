@@ -205,7 +205,7 @@ class _AddEntryBottomSheetState extends ConsumerState<AddEntryBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final goals = ref.watch(goalsProvider).goals;
+    final goals = ref.watch(goalsProvider.select((s) => s.goals));
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
     return Material(

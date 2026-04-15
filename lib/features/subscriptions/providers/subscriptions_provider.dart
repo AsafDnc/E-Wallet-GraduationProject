@@ -67,10 +67,5 @@ class SubscriptionsNotifier extends Notifier<List<SubscriptionModel>> {
 
 final subscriptionsProvider =
     NotifierProvider<SubscriptionsNotifier, List<SubscriptionModel>>(
-  SubscriptionsNotifier.new,
-);
-
-final subscriptionsTotalMonthlyProvider = Provider<double>((ref) {
-  final list = ref.watch(subscriptionsProvider);
-  return list.fold<double>(0, (sum, item) => sum + item.monthlyPrice);
-});
+      SubscriptionsNotifier.new,
+    );

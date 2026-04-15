@@ -83,7 +83,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final goals = ref.watch(goalsProvider).goals;
+    final goals = ref.watch(goalsProvider.select((s) => s.goals));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0D12),

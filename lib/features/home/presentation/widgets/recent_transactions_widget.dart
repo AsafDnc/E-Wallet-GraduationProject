@@ -152,16 +152,20 @@ class _RecentTransactionsWidgetState
         ),
         const SizedBox(height: 14),
         // SlidableAutoCloseBehavior ensures only one item is open at a time.
-        SlidableAutoCloseBehavior(
-          child: AnimatedList(
-            key: _listKey,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            initialItemCount: transactions.length,
-            itemBuilder: (context, index, animation) {
-              if (index >= transactions.length) return const SizedBox.shrink();
-              return _buildTile(transactions[index], animation);
-            },
+        RepaintBoundary(
+          child: SlidableAutoCloseBehavior(
+            child: AnimatedList(
+              key: _listKey,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              initialItemCount: transactions.length,
+              itemBuilder: (context, index, animation) {
+                if (index >= transactions.length) {
+                  return const SizedBox.shrink();
+                }
+                return _buildTile(transactions[index], animation);
+              },
+            ),
           ),
         ),
       ],
