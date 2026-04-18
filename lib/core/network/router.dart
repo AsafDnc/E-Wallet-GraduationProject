@@ -1,10 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
 import '../../features/navigation/presentation/app_shell_screen.dart';
+
+/// A [ChangeNotifier] that fires whenever the Supabase auth state changes,
+/// which causes GoRouter to re-evaluate its [redirect] callback.
+class _AuthStateRefreshNotifier extends ChangeNotifier {
+  _AuthStateRefreshNotifier() {
+    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+      notifyListeners();
+    });
+  }
+
+  late final StreamSubscription<AuthState> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 const _kTransitionDuration = Duration(milliseconds: 380);
 const _kCurve = Curves.easeInOutCubic;
@@ -48,8 +69,24 @@ CustomTransitionPage<void> _horizontalPushPage({
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final refreshNotifier = _AuthStateRefreshNotifier();
+  ref.onDispose(refreshNotifier.dispose);
+
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: Supabase.instance.client.auth.currentSession != null
+        ? '/home'
+        : '/login',
+    refreshListenable: refreshNotifier,
+    redirect: (context, state) {
+      final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+      final isAuthRoute =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/signup';
+
+      if (!isLoggedIn && !isAuthRoute) return '/login';
+      if (isLoggedIn && isAuthRoute) return '/home';
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/login',

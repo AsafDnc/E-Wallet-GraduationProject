@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../core/network/supabase_client_provider.dart';
 
 enum AuthStatus { idle, loading, success, error }
 
@@ -9,27 +12,38 @@ class AuthState {
   final String? errorMessage;
 
   bool get isLoading => status == AuthStatus.loading;
+  bool get isAuthenticated => status == AuthStatus.success;
 
+  /// Replaces fields with new values. Omitting [errorMessage] clears it to null.
   AuthState copyWith({AuthStatus? status, String? errorMessage}) {
     return AuthState(status: status ?? this.status, errorMessage: errorMessage);
   }
 }
 
 class AuthNotifier extends Notifier<AuthState> {
+  SupabaseClient get _client => ref.read(supabaseClientProvider);
+
+  /// Synchronously checks for an existing Supabase session on startup.
   @override
-  AuthState build() => const AuthState();
+  AuthState build() {
+    final hasSession = _client.auth.currentSession != null;
+    return hasSession
+        ? const AuthState(status: AuthStatus.success)
+        : const AuthState();
+  }
 
   Future<void> login({required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
-      // TODO: supabase.auth.signInWithPassword(email: email, password: password);
-      await Future.delayed(const Duration(seconds: 1));
-      state = state.copyWith(status: AuthStatus.success);
-    } catch (e) {
-      state = state.copyWith(
+      await _client.auth.signInWithPassword(email: email, password: password);
+      state = const AuthState(status: AuthStatus.success);
+    } on AuthException catch (e) {
+      state = AuthState(status: AuthStatus.error, errorMessage: e.message);
+    } catch (_) {
+      state = const AuthState(
         status: AuthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: 'An unexpected error occurred. Please try again.',
       );
     }
   }
@@ -43,13 +57,34 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
-      // TODO: supabase.auth.signUp(email: email, password: password, data: {'first_name': firstName, 'last_name': lastName});
-      await Future.delayed(const Duration(seconds: 1));
-      state = state.copyWith(status: AuthStatus.success);
-    } catch (e) {
-      state = state.copyWith(
+      await _client.auth.signUp(
+        email: email,
+        password: password,
+        data: <String, String>{'first_name': firstName, 'last_name': lastName},
+      );
+      state = const AuthState(status: AuthStatus.success);
+    } on AuthException catch (e) {
+      state = AuthState(status: AuthStatus.error, errorMessage: e.message);
+    } catch (_) {
+      state = const AuthState(
         status: AuthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: 'An unexpected error occurred. Please try again.',
+      );
+    }
+  }
+
+  Future<void> signOut() async {
+    state = state.copyWith(status: AuthStatus.loading);
+
+    try {
+      await _client.auth.signOut();
+      state = const AuthState();
+    } on AuthException catch (e) {
+      state = AuthState(status: AuthStatus.error, errorMessage: e.message);
+    } catch (_) {
+      state = const AuthState(
+        status: AuthStatus.error,
+        errorMessage: 'Sign out failed. Please try again.',
       );
     }
   }
@@ -59,6 +94,6 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 }
 
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
-  return AuthNotifier();
-});
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);

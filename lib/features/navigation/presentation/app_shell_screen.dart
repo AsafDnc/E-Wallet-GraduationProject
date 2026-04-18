@@ -76,17 +76,22 @@ class _AppShellScreenState extends State<AppShellScreen> {
               ),
             ],
           ),
-          RepaintBoundary(
-            child: FloatingBottomNav(
-              selectedIndex: _currentIndex,
-              onIndexChanged: (index) {
-                if (index == 2) {
-                  _openEntrySelectionSheet();
-                  return;
-                }
-                if (index == _currentIndex) return;
-                setState(() => _currentIndex = index);
-              },
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 24,
+            child: RepaintBoundary(
+              child: FloatingBottomNav(
+                selectedIndex: _currentIndex,
+                onIndexChanged: (index) {
+                  if (index == 2) {
+                    _openEntrySelectionSheet();
+                    return;
+                  }
+                  if (index == _currentIndex) return;
+                  setState(() => _currentIndex = index);
+                },
+              ),
             ),
           ),
         ],
