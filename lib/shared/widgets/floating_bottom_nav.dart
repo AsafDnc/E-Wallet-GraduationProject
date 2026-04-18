@@ -21,61 +21,56 @@ class FloatingBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 24,
-      right: 24,
-      bottom: 24,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(40),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _SvgNavIcon(
-              asset: selectedIndex == 0
-                  ? 'assets/icons/HomeActive.svg'
-                  : 'assets/icons/Home.svg',
-              isActive: selectedIndex == 0,
-              onTap: () => onIndexChanged(0),
-            ),
-            _SvgNavIcon(
-              asset: selectedIndex == 1
-                  ? 'assets/icons/ChartActive.svg'
-                  : 'assets/icons/Chart.svg',
-              isActive: selectedIndex == 1,
-              onTap: () => onIndexChanged(1),
-            ),
-            _SvgNavIcon(
-              asset: 'assets/icons/Add.svg',
-              isActive: false,
-              onTap: () => onIndexChanged(2),
-            ),
-            _SvgNavIcon(
-              asset: selectedIndex == 3
-                  ? 'assets/icons/SubsActive.svg'
-                  : 'assets/icons/Subs.svg',
-              isActive: selectedIndex == 3,
-              onTap: () => onIndexChanged(3),
-            ),
-            _SvgNavIcon(
-              asset: selectedIndex == 4
-                  ? 'assets/icons/WalletActive.svg'
-                  : 'assets/icons/Wallet.svg',
-              isActive: selectedIndex == 4,
-              onTap: () => onIndexChanged(4),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(40),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _SvgNavIcon(
+            asset: selectedIndex == 0
+                ? 'assets/icons/HomeActive.svg'
+                : 'assets/icons/Home.svg',
+            isActive: selectedIndex == 0,
+            onTap: () => onIndexChanged(0),
+          ),
+          _SvgNavIcon(
+            asset: selectedIndex == 1
+                ? 'assets/icons/ChartActive.svg'
+                : 'assets/icons/Chart.svg',
+            isActive: selectedIndex == 1,
+            onTap: () => onIndexChanged(1),
+          ),
+          _SvgNavIcon(
+            asset: 'assets/icons/Add.svg',
+            isActive: false,
+            onTap: () => onIndexChanged(2),
+          ),
+          _SvgNavIcon(
+            asset: selectedIndex == 3
+                ? 'assets/icons/SubsActive.svg'
+                : 'assets/icons/Subs.svg',
+            isActive: selectedIndex == 3,
+            onTap: () => onIndexChanged(3),
+          ),
+          _SvgNavIcon(
+            asset: selectedIndex == 4
+                ? 'assets/icons/WalletActive.svg'
+                : 'assets/icons/Wallet.svg',
+            isActive: selectedIndex == 4,
+            onTap: () => onIndexChanged(4),
+          ),
+        ],
       ),
     );
   }
