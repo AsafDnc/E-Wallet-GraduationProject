@@ -1,4 +1,4 @@
-# E-Wallet — Ultimate Digital Wallet 💳
+# E-Wallet — Ultimate Digital Wallet 
 
 A modern, fast, and scalable financial management experience. **E-Wallet** is a Flutter application built with **Feature-First Clean Architecture** principles. It enables users to track expenses, set financial goals, and manage subscriptions seamlessly.
 
