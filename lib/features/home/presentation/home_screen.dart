@@ -18,7 +18,6 @@ class HomeScreen extends StatelessWidget {
   final bool showBottomNav;
 
   static const double _navBarHeight = 90;
-  static const _scaffoldBg = Color(0xFF0D0E12);
 
   // Horizontal inset for sections that should not bleed to screen edges.
   static const double _hPad = 16;
@@ -65,7 +64,7 @@ class HomeScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: _scaffoldBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: showBottomNav
           ? Stack(
               children: [

@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../providers/home_provider.dart';
 
 /// Displays the "Spending Flow" card containing an fl_chart [LineChart].
@@ -19,11 +20,9 @@ class SpendingChartWidget extends ConsumerStatefulWidget {
 
 class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
     with SingleTickerProviderStateMixin {
-  // Chart color constants
-  static const _lineColor = Color(0xFF00E5CC);
-  static const _gradientTop = Color(0x8000E5CC);
-  static const _gradientBottom = Color(0x0000E5CC);
-  static const _gridColor = Color(0xFF2A2D32);
+  static const _lineColor = Color(0xFF00C5A0);
+  static const _gradientTop = Color(0x6000C5A0);
+  static const _gradientBottom = Color(0x0000C5A0);
   static const _monthLabels = ['Jan', 'Feb', 'March', 'Apr', 'May', 'Jun'];
 
   // Tracks the currently touched spot index for the smooth indicator.
@@ -65,19 +64,18 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
   Widget build(BuildContext context) {
     final data = ref.watch(homeProvider.select((s) => s.spendingFlowData));
 
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1C20),
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: AppTheme.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Spending Flow',
             style: TextStyle(
-              color: Colors.white,
+              color: cs.onSurface,
               fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
@@ -87,11 +85,14 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
             child: SizedBox(
               height: 180,
               child: FadeTransition(
-                // The whole chart fades in once; the indicator uses its own anim.
                 opacity: const AlwaysStoppedAnimation(1.0),
                 child: LineChart(
-                  _buildChartData(data),
-                  // Smooth out position updates when the finger moves.
+                  _buildChartData(
+                    data,
+                    cs.outlineVariant,
+                    cs.onSurfaceVariant,
+                    cs.surfaceContainerHighest,
+                  ),
                   duration: const Duration(milliseconds: 80),
                   curve: Curves.easeOutCubic,
                 ),
@@ -103,10 +104,17 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
     );
   }
 
-  LineChartData _buildChartData(List<(int, double)> data) {
+  LineChartData _buildChartData(
+    List<(int, double)> data,
+    Color gridColor,
+    Color labelColor,
+    Color tooltipBgColor,
+  ) {
     final spots = data
         .map((entry) => FlSpot(entry.$1.toDouble(), entry.$2))
         .toList();
+
+    final labelStyle = TextStyle(color: labelColor, fontSize: 11);
 
     return LineChartData(
       borderData: FlBorderData(show: false),
@@ -115,7 +123,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
         drawVerticalLine: false,
         horizontalInterval: 200,
         getDrawingHorizontalLine: (_) =>
-            const FlLine(color: _gridColor, strokeWidth: 1),
+            FlLine(color: gridColor, strokeWidth: 1),
       ),
       titlesData: FlTitlesData(
         rightTitles: const AxisTitles(
@@ -134,10 +142,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
               }
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _monthLabels[index],
-                  style: const TextStyle(color: Colors.white38, fontSize: 11),
-                ),
+                child: Text(_monthLabels[index], style: labelStyle),
               );
             },
           ),
@@ -147,10 +152,8 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
             showTitles: true,
             interval: 200,
             reservedSize: 38,
-            getTitlesWidget: (value, meta) => Text(
-              value.toInt().toString(),
-              style: const TextStyle(color: Colors.white38, fontSize: 11),
-            ),
+            getTitlesWidget: (value, meta) =>
+                Text(value.toInt().toString(), style: labelStyle),
           ),
         ),
       ),
@@ -197,7 +200,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
         },
         // Tooltip bubble
         touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (_) => const Color(0xFF2A2D32),
+          getTooltipColor: (_) => tooltipBgColor,
           tooltipBorderRadius: BorderRadius.circular(10),
           tooltipPadding: const EdgeInsets.symmetric(
             horizontal: 12,

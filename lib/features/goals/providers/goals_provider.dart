@@ -72,6 +72,17 @@ class GoalsNotifier extends Notifier<GoalsState> {
     state = state.copyWith(goals: list);
   }
 
+  /// Clears pin and inserts after the last pinned goal (mirror of transactions unpin).
+  void unpinGoal(String id) {
+    final list = List<GoalModel>.from(state.goals);
+    final idx = list.indexWhere((goal) => goal.id == id);
+    if (idx < 0) return;
+    final unpinned = list.removeAt(idx).copyWith(isPinned: false);
+    final lastPinnedIdx = list.lastIndexWhere((goal) => goal.isPinned);
+    list.insert(lastPinnedIdx + 1, unpinned);
+    state = state.copyWith(goals: list);
+  }
+
   void deleteGoal(String id) {
     state = state.copyWith(
       goals: state.goals.where((goal) => goal.id != id).toList(),

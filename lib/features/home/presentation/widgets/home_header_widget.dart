@@ -58,8 +58,8 @@ class _GreetingText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'Good Morning, $userName',
-      style: const TextStyle(
-        color: Colors.white54,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontSize: 16,
         fontWeight: FontWeight.w400,
       ),
@@ -112,6 +112,9 @@ class _BalanceRowState extends State<_BalanceRow> {
     }
     final visibleWidth = _cachedVisibleWidth!;
 
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final themedBalanceStyle = _balanceStyle.copyWith(color: textColor);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -120,22 +123,19 @@ class _BalanceRowState extends State<_BalanceRow> {
           width: visibleWidth,
           child: Stack(
             children: [
-              // Invisible anchor text always holds the correct layout width.
+              // Invisible anchor holds the layout width constant.
               Opacity(
                 opacity: 0.0,
                 child: Text(
                   _formattedBalance,
-                  style: _balanceStyle,
+                  style: themedBalanceStyle,
                   maxLines: 1,
                 ),
               ),
-              // Visible layer: real balance or masked version.
+              // Visible layer: real balance or masked.
               Text(
-                widget.isVisible
-                    ? formatted
-                    // Always keep the $ sign; mask only the digit characters.
-                    : '\$${'*' * _digitsOnly.length}',
-                style: _balanceStyle,
+                widget.isVisible ? formatted : '\$${'*' * _digitsOnly.length}',
+                style: themedBalanceStyle,
                 maxLines: 1,
                 overflow: TextOverflow.clip,
               ),
@@ -151,7 +151,7 @@ class _BalanceRowState extends State<_BalanceRow> {
             widget.isVisible
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: Colors.white38,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             size: 22,
           ),
         ),
@@ -159,8 +159,8 @@ class _BalanceRowState extends State<_BalanceRow> {
     );
   }
 
+  // Constructed in build(); kept as field to avoid recreating on each frame.
   static const _balanceStyle = TextStyle(
-    color: Colors.white,
     fontSize: 44,
     fontWeight: FontWeight.bold,
     letterSpacing: -0.5,
@@ -207,10 +207,11 @@ class _UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CircleAvatar(
+    final cs = Theme.of(context).colorScheme;
+    return CircleAvatar(
       radius: 28,
-      backgroundColor: Color(0xFF2A2D32),
-      child: Icon(Icons.person_rounded, color: Colors.white54, size: 30),
+      backgroundColor: cs.surfaceContainerHighest,
+      child: Icon(Icons.person_rounded, color: cs.onSurfaceVariant, size: 30),
     );
   }
 }
