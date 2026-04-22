@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'transactions_provider.dart';
+
 // ---------------------------------------------------------------------------
 // Home state
 // ---------------------------------------------------------------------------
@@ -86,4 +88,29 @@ class HomeNotifier extends Notifier<HomeState> {
 
 final homeProvider = NotifierProvider<HomeNotifier, HomeState>(() {
   return HomeNotifier();
+});
+
+/// Derives monthly expense totals from [transactionsProvider].
+///
+/// Seeds with 6 months of historical mock data and overlays real transactions.
+/// The result is a sorted list of (monthIndex 0–11, totalAmount) tuples
+/// consumed directly by [SpendingChartWidget].
+final spendingChartDataProvider = Provider<List<(int, double)>>((ref) {
+  final transactions = ref.watch(transactionsProvider);
+
+  // Historical mock baseline (month 0–5 = Jan–Jun).
+  final monthly = <int, double>{0: 200, 1: 350, 2: 420, 3: 310, 4: 500, 5: 680};
+
+  // Overlay real expense transactions grouped by month.
+  for (final tx in transactions) {
+    if (tx.amount < 0) {
+      final idx = tx.createdAt.month - 1;
+      monthly[idx] = (monthly[idx] ?? 0) + tx.amount.abs();
+    }
+  }
+
+  final sorted = monthly.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+
+  return sorted.map((e) => (e.key, e.value)).toList();
 });

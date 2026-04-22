@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/supabase_client_provider.dart';
+import '../../../core/network/supabase_init.dart';
 
 // ─── Profile State ────────────────────────────────────────────────────────────
 
@@ -39,6 +40,14 @@ class ProfileState {
 class ProfileNotifier extends Notifier<ProfileState> {
   @override
   ProfileState build() {
+    if (!supabasePluginReady) {
+      return const ProfileState(
+        fullName: 'User',
+        email: 'user@example.com',
+        currency: '₺ TRY',
+        language: 'English / Türkçe',
+      );
+    }
     final user = ref.read(supabaseClientProvider).auth.currentUser;
     final meta = user?.userMetadata;
     final firstName = meta?['first_name'] as String? ?? '';

@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Domain model representing a single financial transaction.
 class Transaction {
-  const Transaction({
+  Transaction({
     required this.id,
     required this.title,
     required this.amount,
     required this.iconData,
     required this.iconBgColor,
     this.isPinned = false,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   final String id;
   final String title;
@@ -26,6 +27,9 @@ class Transaction {
   /// Whether this transaction is pinned to the top of the list.
   final bool isPinned;
 
+  /// When this transaction was created (used for chart grouping).
+  final DateTime createdAt;
+
   Transaction copyWith({
     String? id,
     String? title,
@@ -33,6 +37,7 @@ class Transaction {
     int? iconData,
     Color? iconBgColor,
     bool? isPinned,
+    DateTime? createdAt,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -41,6 +46,7 @@ class Transaction {
       iconData: iconData ?? this.iconData,
       iconBgColor: iconBgColor ?? this.iconBgColor,
       isPinned: isPinned ?? this.isPinned,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 

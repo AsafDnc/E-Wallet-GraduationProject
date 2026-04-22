@@ -1,119 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/currency_formatter.dart';
+import '../../budget/providers/budget_providers.dart';
+import '../../categories/domain/category_model.dart';
+import '../../categories/providers/category_provider.dart';
 import '../../home/domain/transaction.dart';
 import '../../home/providers/home_provider.dart';
 import '../../home/providers/transactions_provider.dart';
+import '../../wallets/domain/models/wallet_entry_model.dart';
+import '../../wallets/presentation/providers/wallet_providers.dart';
 
-// ─── Domain ───────────────────────────────────────────────────────────────────
+// ─── Entry mode ───────────────────────────────────────────────────────────────
 
-enum _EntryMode { income, expense }
+enum _EntryMode { income, transfer, expense }
 
-class _Category {
-  const _Category({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
+extension _EntryModeX on _EntryMode {
+  String get label {
+    switch (this) {
+      case _EntryMode.income:
+        return 'Income';
+      case _EntryMode.transfer:
+        return 'Transfer';
+      case _EntryMode.expense:
+        return 'Expense';
+    }
+  }
 
-  final String id;
-  final String label;
-  final IconData icon;
-  final Color color;
+  Color pillColor(ColorScheme cs) {
+    switch (this) {
+      case _EntryMode.income:
+        return const Color(0xFF27AE60);
+      case _EntryMode.transfer:
+        return cs.primary;
+      case _EntryMode.expense:
+        return cs.error;
+    }
+  }
 }
 
-// ─── Category data ────────────────────────────────────────────────────────────
-
-const _kExpense = <_Category>[
-  _Category(
-    id: 'food',
-    label: 'Food',
-    icon: Icons.restaurant_rounded,
-    color: Color(0xFFE57373),
-  ),
-  _Category(
-    id: 'transport',
-    label: 'Transport',
-    icon: Icons.directions_car_rounded,
-    color: Color(0xFF64B5F6),
-  ),
-  _Category(
-    id: 'shopping',
-    label: 'Shopping',
-    icon: Icons.shopping_bag_rounded,
-    color: Color(0xFFBA68C8),
-  ),
-  _Category(
-    id: 'bills',
-    label: 'Bills',
-    icon: Icons.receipt_long_rounded,
-    color: Color(0xFFFFB74D),
-  ),
-  _Category(
-    id: 'subscription',
-    label: 'Subscription',
-    icon: Icons.subscriptions_rounded,
-    color: Color(0xFF4FC3F7),
-  ),
-  _Category(
-    id: 'entertainment',
-    label: 'Entertainment',
-    icon: Icons.movie_rounded,
-    color: Color(0xFFF06292),
-  ),
-  _Category(
-    id: 'health',
-    label: 'Healthcare',
-    icon: Icons.local_hospital_rounded,
-    color: Color(0xFF81C784),
-  ),
-  _Category(
-    id: 'other_exp',
-    label: 'Other',
-    icon: Icons.more_horiz_rounded,
-    color: Color(0xFF78909C),
-  ),
-];
-
-const _kIncome = <_Category>[
-  _Category(
-    id: 'salary',
-    label: 'Salary',
-    icon: Icons.account_balance_wallet_rounded,
-    color: Color(0xFF81C784),
-  ),
-  _Category(
-    id: 'freelance',
-    label: 'Freelance',
-    icon: Icons.work_rounded,
-    color: Color(0xFF4FC3F7),
-  ),
-  _Category(
-    id: 'investment',
-    label: 'Investment',
-    icon: Icons.trending_up_rounded,
-    color: Color(0xFFFFD54F),
-  ),
-  _Category(
-    id: 'gift',
-    label: 'Gift',
-    icon: Icons.card_giftcard_rounded,
-    color: Color(0xFFF06292),
-  ),
-  _Category(
-    id: 'rental',
-    label: 'Rental',
-    icon: Icons.home_rounded,
-    color: Color(0xFFAED581),
-  ),
-  _Category(
-    id: 'other_inc',
-    label: 'Other',
-    icon: Icons.more_horiz_rounded,
-    color: Color(0xFF90A4AE),
-  ),
-];
+// Category type alias — using the shared domain model throughout this file.
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -150,18 +76,48 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
 class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   _EntryMode _mode = _EntryMode.expense;
   String _buffer = '';
-  late _Category _category;
+  Category? _category;
   DateTime _date = DateTime.now();
-  bool _showAlert = true;
+  final _noteCtrl = TextEditingController();
+  String? _selectedWalletId;
+  String? _selectedToWalletId;
 
   @override
   void initState() {
     super.initState();
-    _category = _kExpense.first;
+    // Pre-select the default wallet and first expense category.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final wallets = ref.read(walletsProvider);
+      final categories = ref.read(categoryProvider);
+      if (!mounted) return;
+      setState(() {
+        if (wallets.isNotEmpty) {
+          final def = wallets.firstWhere(
+            (w) => w.isDefault,
+            orElse: () => wallets.first,
+          );
+          _selectedWalletId = def.id;
+        }
+        final expenseCats = categories
+            .where((c) => c.type == CategoryType.expense)
+            .toList();
+        if (expenseCats.isNotEmpty) _category = expenseCats.first;
+      });
+    });
   }
 
-  List<_Category> get _categories =>
-      _mode == _EntryMode.income ? _kIncome : _kExpense;
+  @override
+  void dispose() {
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  List<Category> _currentCategories() {
+    final all = ref.read(categoryProvider);
+    return _mode == _EntryMode.income
+        ? all.where((c) => c.type == CategoryType.income).toList()
+        : all.where((c) => c.type == CategoryType.expense).toList();
+  }
 
   double? get _parsedAmount {
     if (_buffer.isEmpty || _buffer == '.') return null;
@@ -169,20 +125,36 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   String get _amountDisplay {
-    if (_buffer.isEmpty) return '\$0';
-    if (_buffer == '.') return '\$0.';
-    return '\$$_buffer';
+    if (_buffer.isEmpty) return '₺0';
+    if (_buffer == '.') return '₺0.';
+    return '₺$_buffer';
   }
 
   bool get _canSave {
     final v = _parsedAmount;
-    return v != null && v > 0;
+    if (v == null || v <= 0) return false;
+    if (_mode == _EntryMode.transfer) {
+      return _selectedWalletId != null &&
+          _selectedToWalletId != null &&
+          _selectedWalletId != _selectedToWalletId;
+    }
+    return true;
   }
 
+  String get _buttonLabel =>
+      _mode == _EntryMode.transfer ? 'Add Transfer' : 'Add Transaction';
+
   void _onModeChanged(_EntryMode m) {
+    final all = ref.read(categoryProvider);
     setState(() {
       _mode = m;
-      _category = m == _EntryMode.income ? _kIncome.first : _kExpense.first;
+      if (m == _EntryMode.income) {
+        final inc = all.where((c) => c.type == CategoryType.income).toList();
+        _category = inc.isNotEmpty ? inc.first : null;
+      } else if (m == _EntryMode.expense) {
+        final exp = all.where((c) => c.type == CategoryType.expense).toList();
+        _category = exp.isNotEmpty ? exp.first : null;
+      }
     });
   }
 
@@ -205,7 +177,6 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         _buffer = k;
         return;
       }
-      // Guard: max 2 decimal places
       final dot = _buffer.indexOf('.');
       if (dot != -1 && _buffer.length - dot > 2) return;
       _buffer += k;
@@ -225,15 +196,39 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   Future<void> _pickCategory() async {
-    final result = await showModalBottomSheet<_Category>(
+    final cats = _currentCategories();
+    final result = await showModalBottomSheet<Category>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) =>
-          _CategorySheet(categories: _categories, selected: _category),
+      builder: (_) => _CategorySheet(categories: cats, selected: _category),
+    );
+    if (result != null && mounted) setState(() => _category = result);
+  }
+
+  Future<void> _pickWallet({bool isDestination = false}) async {
+    final wallets = ref.read(walletsProvider);
+    final currentId = isDestination ? _selectedToWalletId : _selectedWalletId;
+
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _WalletPickerSheet(
+        wallets: wallets,
+        selectedId: currentId,
+        excludeId: isDestination ? _selectedWalletId : null,
+        title: isDestination ? 'To Wallet' : 'From Wallet',
+      ),
     );
     if (result != null && mounted) {
-      setState(() => _category = result);
+      setState(() {
+        if (isDestination) {
+          _selectedToWalletId = result;
+        } else {
+          _selectedWalletId = result;
+        }
+      });
     }
   }
 
@@ -241,28 +236,98 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     final amount = _parsedAmount;
     if (amount == null || amount <= 0) return;
 
-    final signed = _mode == _EntryMode.expense ? -amount : amount;
+    final wallets = ref.read(walletsProvider);
 
-    ref
-        .read(transactionsProvider.notifier)
-        .addAtTop(
-          Transaction(
-            id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
-            title: _category.label,
-            amount: signed,
-            iconData: _category.icon.codePoint,
-            iconBgColor: _category.color,
-          ),
+    if (_mode == _EntryMode.transfer) {
+      // Deduct from source wallet.
+      if (_selectedWalletId != null) {
+        final src = wallets.firstWhere(
+          (w) => w.id == _selectedWalletId,
+          orElse: () => wallets.first,
         );
-    ref.read(homeProvider.notifier).adjustBalance(signed);
+        ref
+            .read(walletsProvider.notifier)
+            .adjustBalance(_selectedWalletId!, src.balance - amount);
+      }
+      // Add to destination wallet.
+      if (_selectedToWalletId != null) {
+        final dst = wallets.firstWhere(
+          (w) => w.id == _selectedToWalletId,
+          orElse: () => wallets.first,
+        );
+        ref
+            .read(walletsProvider.notifier)
+            .adjustBalance(_selectedToWalletId!, dst.balance + amount);
+      }
+    } else {
+      final signed = _mode == _EntryMode.expense ? -amount : amount;
+
+      // Add transaction to the recent list.
+      ref
+          .read(transactionsProvider.notifier)
+          .addAtTop(
+            Transaction(
+              id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
+              title: _noteCtrl.text.trim().isNotEmpty
+                  ? _noteCtrl.text.trim()
+                  : (_category?.name ?? 'Transaction'),
+              amount: signed,
+              iconData:
+                  _category?.displayIcon.codePoint ??
+                  Icons.payment_rounded.codePoint,
+              iconBgColor: _category?.displayColor ?? const Color(0xFF78909C),
+              createdAt: _date,
+            ),
+          );
+
+      // Update the selected wallet balance.
+      if (_selectedWalletId != null && wallets.isNotEmpty) {
+        final wallet = wallets.firstWhere(
+          (w) => w.id == _selectedWalletId,
+          orElse: () => wallets.first,
+        );
+        ref
+            .read(walletsProvider.notifier)
+            .adjustBalance(_selectedWalletId!, wallet.balance + signed);
+      } else {
+        // Fallback: update homeProvider balance directly.
+        ref.read(homeProvider.notifier).adjustBalance(signed);
+      }
+    }
 
     if (mounted) Navigator.of(context).pop();
+  }
+
+  // ─── Wallet label helpers ──────────────────────────────────────────────────
+
+  String _walletLabel(String? id, List<WalletEntry> wallets) {
+    if (id == null || wallets.isEmpty) return 'Select Wallet';
+    final found = wallets.where((w) => w.id == id);
+    return found.isNotEmpty ? found.first.name : 'Select Wallet';
+  }
+
+  IconData _walletIcon(String? id, List<WalletEntry> wallets) {
+    if (id == null || wallets.isEmpty) {
+      return Icons.account_balance_wallet_outlined;
+    }
+    final found = wallets.where((w) => w.id == id);
+    return found.isNotEmpty
+        ? found.first.type.icon
+        : Icons.account_balance_wallet_outlined;
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
+    final wallets = ref.watch(walletsProvider);
+    final modeColor = _mode.pillColor(cs);
+
+    final parsedAmount = _parsedAmount ?? 0;
+    final showBudgetAlert =
+        _mode == _EntryMode.expense &&
+        ref.watch(budgetAlertForAmountProvider(parsedAmount));
+    final budgetSettings = ref.watch(budgetSettingsProvider);
 
     return Material(
       color: Colors.transparent,
@@ -276,7 +341,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drag handle
+            // ── Drag handle ───────────────────────────────────────────────
             Center(
               child: Container(
                 width: 40,
@@ -289,17 +354,30 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             ),
             const SizedBox(height: 20),
 
-            // Segmented control
+            // ── 3-way segment control ─────────────────────────────────────
             _SegmentControl(mode: _mode, onChanged: _onModeChanged),
             const SizedBox(height: 14),
 
-            // Budget alert
-            if (_showAlert) ...[
-              _BudgetAlert(onDismiss: () => setState(() => _showAlert = false)),
-              const SizedBox(height: 14),
-            ],
+            // ── Budget alert (dynamic) ────────────────────────────────────
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) => SizeTransition(
+                sizeFactor: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: showBudgetAlert
+                  ? Padding(
+                      key: const ValueKey('budget_alert'),
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _BudgetAlertBanner(
+                        thresholdPercent: (budgetSettings.alertThreshold * 100)
+                            .toInt(),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('no_alert')),
+            ),
 
-            // Amount display
+            // ── Amount display ────────────────────────────────────────────
             Text(
               'Amount',
               textAlign: TextAlign.center,
@@ -310,61 +388,151 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              _amountDisplay,
-              textAlign: TextAlign.center,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 220),
               style: TextStyle(
-                color: cs.onSurface,
+                color: _buffer.isEmpty
+                    ? cs.onSurfaceVariant.withValues(alpha: 0.4)
+                    : modeColor,
                 fontSize: 52,
                 fontWeight: FontWeight.w700,
                 height: 1.1,
                 letterSpacing: -1.5,
+                fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
+              ),
+              child: Text(_amountDisplay, textAlign: TextAlign.center),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Note input ────────────────────────────────────────────────
+            TextField(
+              controller: _noteCtrl,
+              style: TextStyle(color: cs.onSurface, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Add a note (optional)',
+                hintStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+                prefixIcon: Icon(
+                  Icons.edit_note_rounded,
+                  color: cs.onSurfaceVariant,
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: cs.surfaceContainerHighest,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: modeColor, width: 1.5),
+                ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
 
-            // Category + Date row
-            Row(
-              children: [
-                Expanded(
-                  child: _InputBox(
-                    icon: _category.icon,
-                    label: _category.label,
-                    onTap: _pickCategory,
+            // ── Transfer mode: From / To wallet row ────────────────────────
+            if (_mode == _EntryMode.transfer) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _InputBox(
+                      icon: _walletIcon(_selectedWalletId, wallets),
+                      label: _walletLabel(_selectedWalletId, wallets),
+                      subLabel: 'From',
+                      onTap: () => _pickWallet(),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _InputBox(
-                    icon: Icons.calendar_today_rounded,
-                    label: _formatDate(_date),
-                    onTap: _pickDate,
+                  const SizedBox(width: 10),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: cs.onSurfaceVariant,
+                    size: 20,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _InputBox(
+                      icon: _walletIcon(_selectedToWalletId, wallets),
+                      label: _walletLabel(_selectedToWalletId, wallets),
+                      subLabel: 'To',
+                      onTap: () => _pickWallet(isDestination: true),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _InputBox(
+                icon: Icons.calendar_today_rounded,
+                label: _formatDate(_date),
+                onTap: _pickDate,
+              ),
+              const SizedBox(height: 14),
+            ] else ...[
+              // ── Category  |  Wallet  |  Date ─────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: _InputBox(
+                      icon: _category?.displayIcon ?? Icons.category_rounded,
+                      label: _category?.name ?? 'Category',
+                      onTap: _pickCategory,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _InputBox(
+                      icon: _walletIcon(_selectedWalletId, wallets),
+                      label: _walletLabel(_selectedWalletId, wallets),
+                      onTap: () => _pickWallet(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _InputBox(
+                      icon: Icons.calendar_today_rounded,
+                      label: _formatDate(_date),
+                      onTap: _pickDate,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+            ],
 
-            // Numpad
+            // ── Numpad ────────────────────────────────────────────────────
             _Numpad(onKey: _onKey),
             const SizedBox(height: 14),
 
-            // Add Transaction button
+            // ── Dynamic action button ─────────────────────────────────────
             SizedBox(
               height: 56,
               child: FilledButton(
                 onPressed: _canSave ? _save : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: cs.onPrimary,
-                  disabledBackgroundColor: cs.primary.withValues(alpha: 0.35),
+                  backgroundColor: modeColor,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: modeColor.withValues(alpha: 0.35),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
                 ),
-                child: const Text(
-                  'Add Transaction',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Text(
+                    _buttonLabel,
+                    key: ValueKey(_buttonLabel),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -375,7 +543,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 }
 
-// ─── Segment Control ──────────────────────────────────────────────────────────
+// ─── 3-Way Segment Control ────────────────────────────────────────────────────
 
 class _SegmentControl extends StatelessWidget {
   const _SegmentControl({required this.mode, required this.onChanged});
@@ -386,6 +554,7 @@ class _SegmentControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final modes = _EntryMode.values;
 
     return Container(
       height: 50,
@@ -396,48 +565,42 @@ class _SegmentControl extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final halfW = constraints.maxWidth / 2;
+          final segW = constraints.maxWidth / modes.length;
 
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Animated sliding pill
+              // Animated sliding pill.
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
-                left: mode == _EntryMode.income ? 0 : halfW,
+                left: segW * modes.indexOf(mode),
                 top: 0,
                 bottom: 0,
-                width: halfW,
-                child: Container(
+                width: segW,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
                   decoration: BoxDecoration(
-                    color: cs.onSurface,
+                    color: mode.pillColor(cs),
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
               ),
-              // Tab labels (above the pill)
+              // Labels on top of the pill.
               Row(
-                children: [
-                  Expanded(
-                    child: _SegTab(
-                      label: 'Income',
-                      selected: mode == _EntryMode.income,
-                      selectedColor: cs.surface,
-                      unselectedColor: cs.onSurfaceVariant,
-                      onTap: () => onChanged(_EntryMode.income),
-                    ),
-                  ),
-                  Expanded(
-                    child: _SegTab(
-                      label: 'Expense',
-                      selected: mode == _EntryMode.expense,
-                      selectedColor: cs.surface,
-                      unselectedColor: cs.onSurfaceVariant,
-                      onTap: () => onChanged(_EntryMode.expense),
-                    ),
-                  ),
-                ],
+                children: modes
+                    .map(
+                      (m) => Expanded(
+                        child: _SegTab(
+                          label: m.label,
+                          selected: m == mode,
+                          selectedColor: Colors.white,
+                          unselectedColor: cs.onSurfaceVariant,
+                          onTap: () => onChanged(m),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ],
           );
@@ -474,7 +637,7 @@ class _SegTab extends StatelessWidget {
             fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
             color: selected ? selectedColor : unselectedColor,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 15,
+            fontSize: 14,
           ),
           child: Text(label),
         ),
@@ -485,12 +648,10 @@ class _SegTab extends StatelessWidget {
 
 // ─── Budget Alert Banner ──────────────────────────────────────────────────────
 
-class _BudgetAlert extends StatelessWidget {
-  const _BudgetAlert({required this.onDismiss});
+class _BudgetAlertBanner extends StatelessWidget {
+  const _BudgetAlertBanner({required this.thresholdPercent});
 
-  final VoidCallback onDismiss;
-
-  static const _blue = Color(0xFF2196F3);
+  final int thresholdPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -499,20 +660,20 @@ class _BudgetAlert extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
+        color: cs.errorContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant),
+        border: Border.all(color: cs.error.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
-            decoration: const BoxDecoration(
-              color: Color(0x1A2196F3),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: cs.error.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.info_rounded, color: _blue, size: 20),
+            child: Icon(Icons.warning_amber_rounded, color: cs.error, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -521,28 +682,22 @@ class _BudgetAlert extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Budget Alert',
+                  '⚠️ Budget Alert',
                   style: TextStyle(
-                    color: cs.onSurface,
+                    color: cs.onErrorContainer,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "You've spent 57% of your monthly budget",
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                  'This exceeds your $thresholdPercent% budget limit!',
+                  style: TextStyle(
+                    color: cs.onErrorContainer.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onDismiss,
-            child: Icon(
-              Icons.close_rounded,
-              size: 18,
-              color: cs.onSurfaceVariant,
             ),
           ),
         ],
@@ -558,11 +713,13 @@ class _InputBox extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.subLabel,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final String? subLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -571,30 +728,48 @@ class _InputBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: cs.onSurface),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
+            if (subLabel != null) ...[
+              Text(
+                subLabel!,
                 style: TextStyle(
-                  color: cs.onSurface,
-                  fontSize: 13,
+                  color: cs.onSurfaceVariant,
+                  fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 20,
-              color: cs.onSurfaceVariant,
+              const SizedBox(height: 3),
+            ],
+            Row(
+              children: [
+                Icon(icon, size: 15, color: cs.onSurface),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: cs.onSurface,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: cs.onSurfaceVariant,
+                ),
+              ],
             ),
           ],
         ),
@@ -683,8 +858,8 @@ class _NumKey extends StatelessWidget {
 class _CategorySheet extends StatelessWidget {
   const _CategorySheet({required this.categories, required this.selected});
 
-  final List<_Category> categories;
-  final _Category selected;
+  final List<Category> categories;
+  final Category? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -733,7 +908,7 @@ class _CategorySheet extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 2),
               itemBuilder: (ctx, i) {
                 final cat = categories[i];
-                final isSelected = cat.id == selected.id;
+                final isSelected = cat.id == selected?.id;
 
                 return Material(
                   color: isSelected
@@ -754,15 +929,19 @@ class _CategorySheet extends StatelessWidget {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: cat.color.withValues(alpha: 0.15),
+                              color: cat.displayColor.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(cat.icon, color: cat.color, size: 22),
+                            child: Icon(
+                              cat.displayIcon,
+                              color: cat.displayColor,
+                              size: 22,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Text(
-                              cat.label,
+                              cat.name,
                               style: TextStyle(
                                 color: cs.onSurface,
                                 fontSize: 15,
@@ -770,6 +949,149 @@ class _CategorySheet extends StatelessWidget {
                                     ? FontWeight.w600
                                     : FontWeight.w500,
                               ),
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: cs.primary,
+                              size: 22,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Wallet Picker Sheet ──────────────────────────────────────────────────────
+
+class _WalletPickerSheet extends StatelessWidget {
+  const _WalletPickerSheet({
+    required this.wallets,
+    required this.selectedId,
+    required this.title,
+    this.excludeId,
+  });
+
+  final List<WalletEntry> wallets;
+  final String? selectedId;
+  final String? excludeId;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
+
+    final displayWallets = wallets.where((w) => w.id != excludeId).toList();
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomPad),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: displayWallets.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 2),
+              itemBuilder: (ctx, i) {
+                final wallet = displayWallets[i];
+                final isSelected = wallet.id == selectedId;
+
+                return Material(
+                  color: isSelected
+                      ? cs.primaryContainer.withValues(alpha: 0.55)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    onTap: () => Navigator.of(ctx).pop(wallet.id),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: wallet.displayColor.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              wallet.type.icon,
+                              color: wallet.displayColor,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  wallet.name,
+                                  style: TextStyle(
+                                    color: cs.onSurface,
+                                    fontSize: 15,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  wallet.balance.formatted,
+                                  style: TextStyle(
+                                    color: wallet.balance < 0
+                                        ? cs.error
+                                        : cs.onSurfaceVariant,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           if (isSelected)

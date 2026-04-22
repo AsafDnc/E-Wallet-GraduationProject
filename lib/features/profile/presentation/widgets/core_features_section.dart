@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CoreFeaturesSection extends StatelessWidget {
   const CoreFeaturesSection({super.key});
@@ -48,7 +49,7 @@ class CoreFeaturesSection extends StatelessWidget {
                   Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                 ],
               ),
-              onTap: () {},
+              onTap: () => context.push('/wallets'),
             ),
             _InternalDivider(),
             ListTile(
@@ -59,7 +60,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => context.push('/budget'),
             ),
             _InternalDivider(),
             ListTile(
@@ -70,7 +71,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => context.push('/categories'),
             ),
             _InternalDivider(),
             ListTile(
@@ -84,7 +85,12 @@ class CoreFeaturesSection extends StatelessWidget {
                 Icons.download_rounded,
                 color: cs.onSurfaceVariant,
               ),
-              onTap: () {},
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Coming Soon...'),
+                  duration: Duration(seconds: 2),
+                ),
+              ),
             ),
           ],
         ),
@@ -107,10 +113,11 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: cs.primary,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: cs.onSurface,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
+          letterSpacing: 0.3,
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/supabase_client_provider.dart';
+import '../../../core/network/supabase_init.dart';
 
 enum AuthStatus { idle, loading, success, error }
 
@@ -24,15 +25,32 @@ class AuthNotifier extends Notifier<AuthState> {
   SupabaseClient get _client => ref.read(supabaseClientProvider);
 
   /// Synchronously checks for an existing Supabase session on startup.
+  ///
+  /// Never touches [Supabase.instance] until [supabasePluginReady] is true,
+  /// otherwise [LoginScreen] would crash before the first frame.
   @override
   AuthState build() {
-    final hasSession = _client.auth.currentSession != null;
-    return hasSession
-        ? const AuthState(status: AuthStatus.success)
-        : const AuthState();
+    if (!supabasePluginReady) return const AuthState();
+    try {
+      final hasSession = _client.auth.currentSession != null;
+      return hasSession
+          ? const AuthState(status: AuthStatus.success)
+          : const AuthState();
+    } catch (_) {
+      return const AuthState();
+    }
   }
 
   Future<void> login({required String email, required String password}) async {
+    if (!supabasePluginReady) {
+      state = const AuthState(
+        status: AuthStatus.error,
+        errorMessage:
+            'Unable to reach the server. Check your connection and try again.',
+      );
+      return;
+    }
+
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
@@ -54,6 +72,15 @@ class AuthNotifier extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
+    if (!supabasePluginReady) {
+      state = const AuthState(
+        status: AuthStatus.error,
+        errorMessage:
+            'Unable to reach the server. Check your connection and try again.',
+      );
+      return;
+    }
+
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
@@ -74,6 +101,11 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    if (!supabasePluginReady) {
+      state = const AuthState();
+      return;
+    }
+
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
