@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
 import '../../features/navigation/presentation/app_shell_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 
 /// A [ChangeNotifier] that fires whenever the Supabase auth state changes,
 /// which causes GoRouter to re-evaluate its [redirect] callback.
@@ -107,6 +108,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _horizontalPushPage(
           pageKey: state.pageKey,
           child: const AppShellScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const ProfileScreen(),
         ),
       ),
     ],

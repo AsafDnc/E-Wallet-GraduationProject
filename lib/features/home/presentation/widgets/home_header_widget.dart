@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/home_provider.dart';
 
@@ -208,10 +209,13 @@ class _UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return CircleAvatar(
-      radius: 28,
-      backgroundColor: cs.surfaceContainerHighest,
-      child: Icon(Icons.person_rounded, color: cs.onSurfaceVariant, size: 30),
+    return GestureDetector(
+      onTap: () => context.push('/profile'),
+      child: CircleAvatar(
+        radius: 28,
+        backgroundColor: cs.surfaceContainerHighest,
+        child: Icon(Icons.person_rounded, color: cs.onSurfaceVariant, size: 30),
+      ),
     );
   }
 }
