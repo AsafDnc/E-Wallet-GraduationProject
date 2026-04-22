@@ -13,24 +13,30 @@ class AiBotCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1C20),
+        color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.07),
-          width: 1,
-        ),
+        border: Border.all(color: cs.outlineVariant, width: 1),
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? const [
+                BoxShadow(
+                  color: Color(0x12222B33),
+                  blurRadius: 20,
+                  offset: Offset(0, 4),
+                ),
+              ]
+            : const [],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // AI avatar
           const _AiAvatar(),
           const SizedBox(width: 14),
-          // Text content
-          const Expanded(child: _AiTextContent()),
+          Expanded(child: _AiTextContent(cs: cs)),
         ],
       ),
     );
@@ -65,25 +71,31 @@ class _AiAvatar extends StatelessWidget {
 }
 
 class _AiTextContent extends StatelessWidget {
-  const _AiTextContent();
+  const _AiTextContent({required this.cs});
+
+  final ColorScheme cs;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           'AI Bot',
           style: TextStyle(
-            color: Colors.white,
+            color: cs.onSurface,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Text(
           AiBotCardWidget._description,
-          style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.45),
+          style: TextStyle(
+            color: cs.onSurfaceVariant,
+            fontSize: 13,
+            height: 1.45,
+          ),
         ),
       ],
     );

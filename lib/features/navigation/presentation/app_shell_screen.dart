@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../entry/presentation/add_entry_bottom_sheet.dart';
-import '../../entry/presentation/entry_selection_bottom_sheet.dart';
 import '../../goals/presentation/goals_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../subscriptions/presentation/subscriptions_screen.dart';
@@ -21,34 +20,20 @@ class _AppShellScreenState extends State<AppShellScreen> {
     setState(() => _currentIndex = 0);
   }
 
-  void _openEntrySelectionSheet() {
+  void _openTransactionSheet() {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetContext) {
-        return EntrySelectionBottomSheet(
-          onManualEntry: () {
-            Navigator.of(sheetContext).pop();
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              showModalBottomSheet<void>(
-                context: context,
-                backgroundColor: Colors.transparent,
-                isScrollControlled: true,
-                builder: (_) => const AddEntryBottomSheet(),
-              );
-            });
-          },
-        );
-      },
+      useSafeArea: true,
+      builder: (_) => const AddTransactionSheet(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0D12),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
           IndexedStack(
@@ -85,7 +70,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                 selectedIndex: _currentIndex,
                 onIndexChanged: (index) {
                   if (index == 2) {
-                    _openEntrySelectionSheet();
+                    _openTransactionSheet();
                     return;
                   }
                   if (index == _currentIndex) return;
@@ -106,6 +91,6 @@ class _ShellPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(color: Color(0xFF0B0D12));
+    return ColoredBox(color: Theme.of(context).colorScheme.surface);
   }
 }

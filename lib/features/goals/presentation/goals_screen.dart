@@ -38,6 +38,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           child: GoalCardWidget(
             goal: before[fromIdx],
             onPin: () {},
+            onUnpin: () {},
             onDelete: () {},
           ),
         ),
@@ -56,6 +57,44 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     });
   }
 
+  void _onUnpin(String id) {
+    final notifier = ref.read(goalsProvider.notifier);
+    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
+    final fromIdx = before.indexWhere((goal) => goal.id == id);
+    if (fromIdx < 0) return;
+
+    _listKey.currentState?.removeItem(
+      fromIdx,
+      (context, animation) => SizeTransition(
+        sizeFactor: animation,
+        child: FadeTransition(
+          opacity: animation,
+          child: GoalCardWidget(
+            goal: before[fromIdx],
+            onPin: () {},
+            onUnpin: () {},
+            onDelete: () {},
+          ),
+        ),
+      ),
+      duration: const Duration(milliseconds: 280),
+    );
+
+    notifier.unpinGoal(id);
+
+    Future.delayed(const Duration(milliseconds: 60), () {
+      if (!mounted) return;
+      final next = ref.read(goalsProvider).goals;
+      final newIdx = next.indexWhere((goal) => goal.id == id);
+      if (newIdx >= 0) {
+        _listKey.currentState?.insertItem(
+          newIdx,
+          duration: const Duration(milliseconds: 400),
+        );
+      }
+    });
+  }
+
   void _onDelete(String id) {
     final notifier = ref.read(goalsProvider.notifier);
     final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
@@ -71,6 +110,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           child: GoalCardWidget(
             goal: before[idx],
             onPin: () {},
+            onUnpin: () {},
             onDelete: () {},
           ),
         ),
@@ -85,32 +125,32 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   Widget build(BuildContext context) {
     final goals = ref.watch(goalsProvider.select((s) => s.goals));
 
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0D12),
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 130),
           child: Column(
             children: [
+              // ── Shared header layout (mirrors SubscriptionsScreen) ───────
               Row(
                 children: [
                   IconButton(
                     onPressed: widget.onBackTap,
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 22,
-                    ),
+                    icon: Icon(Icons.arrow_back, color: cs.onSurface, size: 22),
                     splashRadius: 22,
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
                         'Saving Goals',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w400,
+                          color: cs.onSurfaceVariant,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.15,
                         ),
                       ),
                     ),
@@ -118,36 +158,42 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   Container(
                     width: 42,
                     height: 42,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF2A2E37),
+                      color: cs.surfaceContainerHighest,
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 22),
+                    child: Icon(Icons.add, color: cs.onSurface, size: 22),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              Text.rich(
-                TextSpan(
-                  children: const [
-                    TextSpan(
-                      text: '\$12,155 ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 56,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
+              // ── Totals row: centered, compact (saved vs target) ───────────
+              Center(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '\$12,155 ',
+                        style: TextStyle(
+                          color: cs.onSurface,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    TextSpan(
-                      text: '/ \$57,250',
-                      style: TextStyle(
-                        color: Color(0xFF9AA0AA),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
+                      TextSpan(
+                        text: '/ \$57,250',
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          height: 1.15,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(height: 18),
@@ -166,6 +212,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                       child: GoalCardWidget(
                         goal: goal,
                         onPin: () => _onPin(goal.id),
+                        onUnpin: () => _onUnpin(goal.id),
                         onDelete: () => _onDelete(goal.id),
                       ),
                     ),

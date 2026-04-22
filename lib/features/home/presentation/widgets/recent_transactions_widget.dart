@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/transaction.dart';
 import '../../providers/transactions_provider.dart';
 
 /// Vertical animated list of recent financial transactions.
 ///
 /// • Swipe LEFT  → reveals a red delete action (flutter_slidable BehindMotion)
-/// • Swipe RIGHT → pin to top (green Pin action)
+/// • Swipe RIGHT → pin; same action again (or tap Pinned.svg) → unpin
 /// • Pinned item shows Pinned.svg badge; tapping it unpins.
 /// • Pinning animates the item flying to the top via [AnimatedList].
 class RecentTransactionsWidget extends ConsumerStatefulWidget {
@@ -141,10 +142,10 @@ class _RecentTransactionsWidgetState
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
-          child: const Text(
+          child: Text(
             'Recent Transaction',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -234,10 +235,12 @@ class _TransactionTile extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: _tileRadius,
                 child: SlidableAction(
-                  onPressed: (_) => onPin(),
-                  backgroundColor: const Color(0xFF2E7D32),
+                  onPressed: (_) => transaction.isPinned ? onUnpin() : onPin(),
+                  backgroundColor: AppTheme.pinSwipeBackground,
                   foregroundColor: Colors.white,
-                  icon: Icons.push_pin_outlined,
+                  icon: transaction.isPinned
+                      ? Icons.push_pin
+                      : Icons.push_pin_outlined,
                   padding: EdgeInsets.zero,
                 ),
               ),
@@ -249,8 +252,8 @@ class _TransactionTile extends StatelessWidget {
         child: ClipRRect(
           borderRadius: _tileRadius,
           child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1A1C20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
               borderRadius: _tileRadius,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -261,8 +264,8 @@ class _TransactionTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     transaction.title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
@@ -289,8 +292,8 @@ class _TransactionTile extends StatelessWidget {
                           'assets/icons/Pinned.svg',
                           width: 18,
                           height: 18,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white70,
+                          colorFilter: ColorFilter.mode(
+                            Theme.of(context).colorScheme.onSurface,
                             BlendMode.srcIn,
                           ),
                         ),

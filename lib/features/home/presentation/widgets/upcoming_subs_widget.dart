@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../subscriptions/domain/subscription_model.dart';
 import '../../../subscriptions/providers/subscriptions_provider.dart';
 
@@ -22,10 +23,10 @@ class UpcomingSubsWidget extends ConsumerWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: const Text(
+          child: Text(
             'Upcoming Subs',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -60,31 +61,31 @@ class _SubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
       width: 148,
       padding: const EdgeInsets.all(11),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1E22),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: AppTheme.cardDecoration(
+        context,
+      ).copyWith(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Icon row: brand icon left, renewal badge immediately to its right.
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _BrandIcon(subscription: subscription),
-              const SizedBox(width: 14),
+              const Spacer(),
               _RenewalBadge(days: subscription.daysUntilRenewal),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             subscription.shortNameUppercase,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: cs.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.3,
@@ -94,7 +95,7 @@ class _SubscriptionCard extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             subscription.homePriceLine,
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
           ),
         ],
       ),
@@ -132,26 +133,35 @@ class _RenewalBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    // Distinct mini-surface so the reminder sits apart from the card body.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // ↑
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outlineVariant),
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? const [
+                BoxShadow(
+                  color: Color(0x0D222B33),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ]
+            : const [],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.alarm_rounded,
-            color: Colors.black,
-            size: 14,
-          ), // ↑ from 12
-          const SizedBox(width: 3),
+          Icon(Icons.alarm_rounded, color: cs.primary, size: 15),
+          const SizedBox(width: 5),
           Text(
             days.toString(),
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 13, // ↑ from 11
+            style: TextStyle(
+              color: cs.onSurface,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),

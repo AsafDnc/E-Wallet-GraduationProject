@@ -19,8 +19,11 @@ class SubscriptionCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Slidable(
         key: ValueKey(subscription.id),
         endActionPane: ActionPane(
@@ -44,57 +47,66 @@ class SubscriptionCardWidget extends StatelessWidget {
         ),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF181B22),
+            color: cs.surfaceContainer,
             borderRadius: BorderRadius.circular(_radius),
-            border: Border.all(color: const Color(0xFF31353F)),
+            border: Border.all(color: cs.outlineVariant),
+            boxShadow: isLight
+                ? const [
+                    BoxShadow(
+                      color: Color(0x12222B33),
+                      blurRadius: 18,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : const [],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: subscription.iconBgColor,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
                   IconData(subscription.iconData, fontFamily: 'MaterialIcons'),
                   color: Colors.white,
-                  size: 28,
+                  size: 26,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       subscription.displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
+                      style: TextStyle(
+                        color: cs.onSurface,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text.rich(
                       TextSpan(
                         children: [
                           TextSpan(
                             text: subscription.priceDollarsText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                            style: TextStyle(
+                              color: cs.onSurface,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
                             text: ' / mo',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.45),
+                              color: cs.onSurfaceVariant,
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
@@ -103,7 +115,7 @@ class SubscriptionCardWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _BillingRing(subscription: subscription),
             ],
           ),
@@ -120,8 +132,12 @@ class _BillingRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const size = 72.0;
+    const size = 66.0;
     final progress = subscription.billingProgress.clamp(0.0, 1.0);
+    final cs = Theme.of(context).colorScheme;
+    final ringBg = cs.surfaceContainerHighest;
+    // Match primary body text (dark charcoal in light mode), not brand blue.
+    final ringFg = cs.onSurface;
 
     return SizedBox(
       width: size,
@@ -129,24 +145,17 @@ class _BillingRing extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
+          SizedBox(
             width: size,
             height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.12 * progress),
-                  blurRadius: 10,
-                  spreadRadius: 0,
-                ),
-              ],
-            ),
             child: CircularProgressIndicator(
               value: progress,
-              strokeWidth: 5,
-              backgroundColor: const Color(0xFF3A3E47),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              // Slightly thicker, premium feel.
+              strokeWidth: 6,
+              // Rounded ends for a softer, modern look.
+              strokeCap: StrokeCap.round,
+              backgroundColor: ringBg,
+              valueColor: AlwaysStoppedAnimation<Color>(ringFg),
             ),
           ),
           Column(
@@ -154,9 +163,9 @@ class _BillingRing extends StatelessWidget {
             children: [
               Text(
                 '${subscription.daysUntilRenewal}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   height: 1,
                 ),
@@ -164,10 +173,10 @@ class _BillingRing extends StatelessWidget {
               Text(
                 'Days',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 11,
+                  color: cs.onSurfaceVariant,
+                  fontSize: 10,
                   fontWeight: FontWeight.w500,
-                  height: 1.1,
+                  height: 1.2,
                 ),
               ),
             ],
