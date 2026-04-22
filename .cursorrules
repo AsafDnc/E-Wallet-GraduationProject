@@ -1,43 +1,66 @@
-# Proje: E-Wallet (PWA/Offline Destekli Mobil Cüzdan Uygulaması)
-# Rol: Kıdemli Yazılım Mimarı & Flutter Geliştirici
+Project: E-Wallet (PWA/Offline-Supported Mobile Wallet Application)
+Role: Senior Software Architect & Flutter Developer
+1. Core Technologies and Standards
+Framework: Flutter (Material 3 design standards, minimalist interface).
 
-## 1. Temel Teknolojiler ve Standartlar
-- Framework: Flutter (Material 3 tasarım standartları, minimalist arayüz).
-- Dil: Dart (Null safety KESİNLİKLE aktif olmalı).
-  - Tip güvenliği esastır. `dynamic` tipi KULLANILAMAZ.
-  - Sınıf (Class) ve değişken isimlendirmeleri açıklayıcı olmalıdır.
-- Backend & Veritabanı: Supabase Flutter SDK (Auth, PostgreSQL veritabanı).
-- State Management (Durum Yönetimi): Riverpod (`flutter_riverpod` veya `hooks_riverpod`).
-- Routing (Yönlendirme): GoRouter (Sayfa geçişleri için).
-- Çevrimdışı Depolama (Offline First): Isar Database (İnternetsiz kullanımlar için).
-- Anlık Bildirimler: Firebase Cloud Messaging (FCM).
-- Otomasyon: Supabase `pg_cron` (Aboneliklerin otomatik düşümü için).
-- Veri Görselleştirme: `fl_chart` (Pasta ve çubuk grafikler).
+Language: Dart (Null safety MUST STRICTLY be enabled).
 
-## 2. Kategori Bazlı Dizin Yapısı (Feature-First Clean Architecture)
-Proje kesinlikle "Özellik Odaklı" (Feature-First) ve düzenli bir yapıda olmalıdır. Tüm kodlar `lib/` dizini altında şu mantıkla ayrılmalıdır:
+Type safety is essential. The dynamic type CANNOT be used.
 
-- `lib/core/`: Uygulamanın kalbi. Tüm modüllerin kullandığı temel yapılar.
-  - `/theme` (Renkler, tipografi)
-  - `/network` (Supabase, Isar bağlantı ayarları)
-  - `/constants` (Sabit değerler, API anahtarları)
-  - `/utils` (Formatlayıcılar, yardımcı fonksiyonlar)
-  - `/error` (Özelleştirilmiş hata sınıfları)
+Class and variable naming must be descriptive and self-explanatory.
 
-- `lib/shared/`: Birden fazla ekranda kullanılan ortak UI bileşenleri.
-  - `/widgets` (CustomButton, CustomTextField vb.)
+Backend & Database: Supabase Flutter SDK (Auth, PostgreSQL database).
 
-- `lib/features/`: İş mantığının kalbi. Her özellik kendi klasöründe izole olmalıdır.
-  - Örnek: `/auth`, `/budget`, `/subscriptions`, `/goals`
-  - Her özelliğin iç yapısı şu şekilde KATEGORİZE EDİLECEKTİR:
-    - `presentation/`: Ekranlar (Screens) ve o özelliğe ait widget'lar.
-    - `domain/`: Veri modelleri (Entities) ve iş kuralları (Usecases).
-    - `data/`: Veri kaynakları (Isar Local, Supabase Remote) ve Repository sınıfları.
-    - `providers/`: O özelliğe ait Riverpod State Notifier'ları.
+State Management: Riverpod (flutter_riverpod or hooks_riverpod).
 
-## 3. Geliştirme Kuralları ve Kodlama Stili
-1. UI ve İş Mantığı Ayrımı: Ekran (Screen) ve Widget dosyalarının içine ağır iş mantığı yazılamaz. UI sadece veriyi gösterir, işlemler `providers/` içindeki Riverpod sınıflarında yapılır.
-2. Hata Yönetimi: 
-   - İçiçe geçmiş `if-else` blokları YASAKTIR. "Guard Clause" ve "Early Return" (Erken dönüş) mantığı kullanılacaktır.
-   - API veya veritabanı işlemlerinde muhakkak `try/catch` blokları kullanılacaktır.
-3. Performans: `const` anahtar kelimesi, Flutter'ın gereksiz yere ekranı yeniden çizmesini (rebuild) önlemek için mümkün olan HER YERDE (widget'lar, padding'ler, text'ler) zorunlu olarak kullanılacaktır.
+Routing: GoRouter (For page navigation and transitions).
+
+Offline Storage (Offline First): Isar Database (For offline functionality).
+
+Push Notifications: Firebase Cloud Messaging (FCM).
+
+Automation: Supabase pg_cron (For automatic subscription deductions).
+
+Data Visualization: fl_chart (Pie and bar charts).
+
+2. Category-Based Directory Structure (Feature-First Clean Architecture)
+The project must strictly follow a "Feature-First" and organized structure. All code under the lib/ directory must be separated using the following logic:
+
+lib/core/: The heart of the application. Foundational structures used by all modules.
+
+/theme (Colors, typography)
+
+/network (Supabase, Isar connection configurations)
+
+/constants (Constant values, API keys)
+
+/utils (Formatters, helper functions)
+
+/error (Custom error classes)
+
+lib/shared/: Common UI components used across multiple screens.
+
+/widgets (CustomButton, CustomTextField, etc.)
+
+lib/features/: The core of the business logic. Each feature must be isolated within its own folder.
+
+Example: /auth, /budget, /subscriptions, /goals
+
+The internal structure of each feature MUST BE CATEGORIZED as follows:
+
+presentation/: Screens and widgets specific to that feature.
+
+domain/: Data models (Entities) and business rules (Use cases).
+
+data/: Data sources (Isar Local, Supabase Remote) and Repository classes.
+
+providers/: Riverpod State Notifiers specific to that feature.
+
+3. Development Rules and Coding Style
+Separation of UI and Business Logic: Heavy business logic cannot be written inside Screen and Widget files. The UI is strictly for displaying data; operations and state modifications must be handled within the Riverpod classes in the providers/ directory.
+
+Error Handling: - Deeply nested if-else blocks are FORBIDDEN. "Guard Clause" and "Early Return" patterns must be utilized.
+
+try/catch blocks must strictly be used in all API or database operations.
+
+Performance: The const keyword MUST strictly be used EVERYWHERE possible (widgets, paddings, texts) to prevent Flutter from unnecessarily redrawing (rebuilding) the screen.
