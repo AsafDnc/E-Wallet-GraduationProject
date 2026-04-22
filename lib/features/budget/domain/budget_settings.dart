@@ -1,3 +1,4 @@
+/// Holds all user-configurable budget settings.
 class BudgetSettings {
   const BudgetSettings({
     this.monthlyLimit = 10000.0,
@@ -8,8 +9,7 @@ class BudgetSettings {
   final double monthlyLimit;
   final bool isAlertEnabled;
 
-  /// Alert fires when (spent + new) >= (limit * threshold).
-  /// Valid values: 0.5, 0.75, 0.9, 1.0
+  /// Fraction at which an alert fires: 0.5, 0.75, 0.9, or 1.0.
   final double alertThreshold;
 
   BudgetSettings copyWith({

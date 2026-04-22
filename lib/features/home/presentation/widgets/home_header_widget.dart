@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/utils/currency_formatter.dart';
-import '../../../../features/wallets/presentation/providers/wallet_providers.dart';
 import '../../providers/home_provider.dart';
 
 /// Displays the top section of the Home screen:
@@ -15,10 +14,10 @@ class HomeHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final walletBalance = ref.watch(calculatedBalanceProvider);
     final header = ref.watch(
       homeProvider.select(
-        (s) => (s.userName, s.balanceChangePercent, s.isBalanceVisible),
+        (s) =>
+            (s.userName, s.balance, s.balanceChangePercent, s.isBalanceVisible),
       ),
     );
 
@@ -32,9 +31,9 @@ class HomeHeaderWidget extends ConsumerWidget {
               _GreetingText(userName: header.$1),
               const SizedBox(height: 6),
               _BalanceRow(
-                balance: walletBalance,
-                changePercent: header.$2,
-                isVisible: header.$3,
+                balance: header.$2,
+                changePercent: header.$3,
+                isVisible: header.$4,
                 onToggleVisibility: () =>
                     ref.read(homeProvider.notifier).toggleBalanceVisibility(),
               ),
@@ -93,9 +92,7 @@ class _BalanceRowState extends State<_BalanceRow> {
 
   String get _formattedBalance => widget.balance.formattedCompact;
 
-  /// Returns only the digit characters (used to size the masked asterisks).
-  String get _digitsOnly =>
-      widget.balance.toStringAsFixed(0).replaceAll('-', '');
+  String get _digitsOnly => widget.balance.abs().toStringAsFixed(0);
 
   @override
   Widget build(BuildContext context) {

@@ -15,7 +15,7 @@ class BudgetScreen extends ConsumerStatefulWidget {
 
 class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   late final TextEditingController _limitCtrl;
-  bool _isEditingLimit = false;
+  bool _editingLimit = false;
 
   @override
   void initState() {
@@ -36,8 +36,14 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     final parsed = double.tryParse(_limitCtrl.text.replaceAll(',', '.'));
     if (parsed != null && parsed > 0) {
       ref.read(budgetSettingsProvider.notifier).setLimit(parsed);
+    } else {
+      // Reset field to current valid value on bad input.
+      _limitCtrl.text = ref
+          .read(budgetSettingsProvider)
+          .monthlyLimit
+          .toStringAsFixed(0);
     }
-    setState(() => _isEditingLimit = false);
+    setState(() => _editingLimit = false);
     FocusScope.of(context).unfocus();
   }
 
@@ -60,6 +66,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       appBar: AppBar(
         backgroundColor: cs.surface,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -70,10 +77,10 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
-          // ── Limit Input Card ──────────────────────────────────────────
-          _SectionCard(
+          // ── Limit card ─────────────────────────────────────────────────
+          _Card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -86,9 +93,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
-                    if (!_isEditingLimit)
+                    if (!_editingLimit)
                       TextButton.icon(
-                        onPressed: () => setState(() => _isEditingLimit = true),
+                        onPressed: () => setState(() => _editingLimit = true),
                         icon: const Icon(Icons.edit_outlined, size: 16),
                         label: const Text('Edit'),
                         style: TextButton.styleFrom(
@@ -99,95 +106,98 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                if (_isEditingLimit) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _limitCtrl,
-                          autofocus: true,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[\d,.]'),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _editingLimit
+                      ? Row(
+                          key: const ValueKey('edit'),
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _limitCtrl,
+                                autofocus: true,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[\d,.]'),
+                                  ),
+                                ],
+                                decoration: InputDecoration(
+                                  prefixText: '₺ ',
+                                  labelText: 'Monthly Limit',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                onSubmitted: (_) => _applyLimit(),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            FilledButton(
+                              onPressed: _applyLimit,
+                              child: const Text('Apply'),
                             ),
                           ],
-                          decoration: InputDecoration(
-                            prefixText: '₺ ',
-                            labelText: 'Monthly Limit',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
+                        )
+                      : Column(
+                          key: const ValueKey('display'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              settings.monthlyLimit.formattedCompact,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: cs.onSurface,
+                                  ),
                             ),
-                          ),
-                          onSubmitted: (_) => _applyLimit(),
+                            Text(
+                              'per month',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: cs.onSurfaceVariant),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      FilledButton(
-                        onPressed: _applyLimit,
-                        child: const Text('Apply'),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Text(
-                    settings.monthlyLimit.formattedCompact,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  Text(
-                    'per month',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                ],
+                ),
               ],
             ),
           ),
 
           const SizedBox(height: 12),
 
-          // ── Progress Card ─────────────────────────────────────────────
-          _SectionCard(
+          // ── Progress card ──────────────────────────────────────────────
+          _Card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Spending Progress',
+                  'Spending This Month',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Progress bar
+                // Animated progress bar
                 TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: progress),
-                  duration: const Duration(milliseconds: 800),
+                  duration: const Duration(milliseconds: 900),
                   curve: Curves.easeOutCubic,
-                  builder: (context, value, _) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: value,
-                        minHeight: 14,
-                        backgroundColor: cs.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          progressColor,
-                        ),
-                      ),
-                    );
-                  },
+                  builder: (_, value, child) => ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: value,
+                      minHeight: 14,
+                      backgroundColor: cs.surfaceContainerHighest,
+                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                    ),
+                  ),
                 ),
-
                 const SizedBox(height: 10),
 
-                // Labels
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -206,10 +216,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 4),
 
-                // Remaining
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: progress >= 1.0
@@ -218,12 +226,12 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           children: [
                             Icon(
                               Icons.warning_amber_rounded,
-                              size: 16,
+                              size: 15,
                               color: cs.error,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Over budget by ${(spent - settings.monthlyLimit).formatted}',
+                              'Over by ${(spent - settings.monthlyLimit).formatted}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: cs.error,
@@ -245,8 +253,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
 
           const SizedBox(height: 12),
 
-          // ── Alert Settings Card ───────────────────────────────────────
-          _SectionCard(
+          // ── Alert settings card ────────────────────────────────────────
+          _Card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -257,12 +265,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Budget Alerts'),
                   subtitle: Text(
-                    'Warn when adding a transaction that exceeds the threshold',
+                    'Warn when a new expense crosses the threshold',
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
@@ -273,7 +280,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       .setAlertEnabled(val),
                   activeThumbColor: cs.primary,
                 ),
-
                 AnimatedOpacity(
                   opacity: settings.isAlertEnabled ? 1.0 : 0.38,
                   duration: const Duration(milliseconds: 200),
@@ -308,13 +314,13 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                   .read(budgetSettingsProvider.notifier)
                                   .setThreshold(s.first)
                             : null,
-                        style: ButtonStyle(
+                        style: const ButtonStyle(
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Text(
-                        'Alert fires when spending + new transaction ≥ '
+                        'Alert fires when spending + new expense ≥ '
                         '${(settings.alertThreshold * 100).toInt()}% of limit',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
@@ -332,10 +338,10 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   }
 }
 
-// ─── Shared card wrapper ──────────────────────────────────────────────────────
+// ─── Card wrapper ─────────────────────────────────────────────────────────────
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child});
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
 
   final Widget child;
 

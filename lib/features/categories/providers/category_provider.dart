@@ -5,8 +5,8 @@ import '../domain/category_model.dart';
 class CategoryNotifier extends Notifier<List<Category>> {
   @override
   List<Category> build() => [
-    ...kSeedExpenseCategories,
-    ...kSeedIncomeCategories,
+    ...buildSeedExpenseCategories(),
+    ...buildSeedIncomeCategories(),
   ];
 
   void addCategory(Category category) {

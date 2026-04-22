@@ -1,45 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/utils/currency_formatter.dart';
 import '../../budget/providers/budget_providers.dart';
 import '../../categories/domain/category_model.dart';
 import '../../categories/providers/category_provider.dart';
 import '../../home/domain/transaction.dart';
 import '../../home/providers/home_provider.dart';
 import '../../home/providers/transactions_provider.dart';
-import '../../wallets/domain/models/wallet_entry_model.dart';
-import '../../wallets/presentation/providers/wallet_providers.dart';
 
 // ─── Entry mode ───────────────────────────────────────────────────────────────
 
-enum _EntryMode { income, transfer, expense }
-
-extension _EntryModeX on _EntryMode {
-  String get label {
-    switch (this) {
-      case _EntryMode.income:
-        return 'Income';
-      case _EntryMode.transfer:
-        return 'Transfer';
-      case _EntryMode.expense:
-        return 'Expense';
-    }
-  }
-
-  Color pillColor(ColorScheme cs) {
-    switch (this) {
-      case _EntryMode.income:
-        return const Color(0xFF27AE60);
-      case _EntryMode.transfer:
-        return cs.primary;
-      case _EntryMode.expense:
-        return cs.error;
-    }
-  }
-}
-
-// Category type alias — using the shared domain model throughout this file.
+enum _EntryMode { income, expense }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -58,13 +29,12 @@ String _formatDate(DateTime d) {
     'Nov',
     'Dec',
   ];
-  return '${d.day} ${months[d.month - 1]} ${d.year},';
+  return '${d.day} ${months[d.month - 1]} ${d.year}';
 }
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
 /// Full-height transaction entry sheet.
-/// Opened directly by tapping the center (+) button in the bottom nav.
 class AddTransactionSheet extends ConsumerStatefulWidget {
   const AddTransactionSheet({super.key});
 
@@ -78,45 +48,26 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   String _buffer = '';
   Category? _category;
   DateTime _date = DateTime.now();
-  final _noteCtrl = TextEditingController();
-  String? _selectedWalletId;
-  String? _selectedToWalletId;
 
   @override
   void initState() {
     super.initState();
-    // Pre-select the default wallet and first expense category.
+    // Initialise category after first frame so providers are ready.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final wallets = ref.read(walletsProvider);
-      final categories = ref.read(categoryProvider);
       if (!mounted) return;
-      setState(() {
-        if (wallets.isNotEmpty) {
-          final def = wallets.firstWhere(
-            (w) => w.isDefault,
-            orElse: () => wallets.first,
-          );
-          _selectedWalletId = def.id;
-        }
-        final expenseCats = categories
-            .where((c) => c.type == CategoryType.expense)
-            .toList();
-        if (expenseCats.isNotEmpty) _category = expenseCats.first;
-      });
+      final cats = ref.read(categoryProvider);
+      final expCats = cats
+          .where((c) => c.type == CategoryType.expense)
+          .toList();
+      if (expCats.isNotEmpty) setState(() => _category = expCats.first);
     });
   }
 
-  @override
-  void dispose() {
-    _noteCtrl.dispose();
-    super.dispose();
-  }
-
-  List<Category> _currentCategories() {
-    final all = ref.read(categoryProvider);
+  List<Category> get _currentCategories {
+    final cats = ref.read(categoryProvider);
     return _mode == _EntryMode.income
-        ? all.where((c) => c.type == CategoryType.income).toList()
-        : all.where((c) => c.type == CategoryType.expense).toList();
+        ? cats.where((c) => c.type == CategoryType.income).toList()
+        : cats.where((c) => c.type == CategoryType.expense).toList();
   }
 
   double? get _parsedAmount {
@@ -132,29 +83,17 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   bool get _canSave {
     final v = _parsedAmount;
-    if (v == null || v <= 0) return false;
-    if (_mode == _EntryMode.transfer) {
-      return _selectedWalletId != null &&
-          _selectedToWalletId != null &&
-          _selectedWalletId != _selectedToWalletId;
-    }
-    return true;
+    return v != null && v > 0;
   }
 
-  String get _buttonLabel =>
-      _mode == _EntryMode.transfer ? 'Add Transfer' : 'Add Transaction';
-
   void _onModeChanged(_EntryMode m) {
-    final all = ref.read(categoryProvider);
+    final cats = ref.read(categoryProvider);
     setState(() {
       _mode = m;
-      if (m == _EntryMode.income) {
-        final inc = all.where((c) => c.type == CategoryType.income).toList();
-        _category = inc.isNotEmpty ? inc.first : null;
-      } else if (m == _EntryMode.expense) {
-        final exp = all.where((c) => c.type == CategoryType.expense).toList();
-        _category = exp.isNotEmpty ? exp.first : null;
-      }
+      final filtered = m == _EntryMode.income
+          ? cats.where((c) => c.type == CategoryType.income).toList()
+          : cats.where((c) => c.type == CategoryType.expense).toList();
+      _category = filtered.isNotEmpty ? filtered.first : null;
     });
   }
 
@@ -190,13 +129,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    if (picked != null && mounted) {
-      setState(() => _date = picked);
-    }
+    if (picked != null && mounted) setState(() => _date = picked);
   }
 
   Future<void> _pickCategory() async {
-    final cats = _currentCategories();
+    final cats = _currentCategories;
     final result = await showModalBottomSheet<Category>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -206,128 +143,46 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     if (result != null && mounted) setState(() => _category = result);
   }
 
-  Future<void> _pickWallet({bool isDestination = false}) async {
-    final wallets = ref.read(walletsProvider);
-    final currentId = isDestination ? _selectedToWalletId : _selectedWalletId;
-
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _WalletPickerSheet(
-        wallets: wallets,
-        selectedId: currentId,
-        excludeId: isDestination ? _selectedWalletId : null,
-        title: isDestination ? 'To Wallet' : 'From Wallet',
-      ),
-    );
-    if (result != null && mounted) {
-      setState(() {
-        if (isDestination) {
-          _selectedToWalletId = result;
-        } else {
-          _selectedWalletId = result;
-        }
-      });
-    }
-  }
-
   void _save() {
     final amount = _parsedAmount;
     if (amount == null || amount <= 0) return;
 
-    final wallets = ref.read(walletsProvider);
+    final signed = _mode == _EntryMode.expense ? -amount : amount;
 
-    if (_mode == _EntryMode.transfer) {
-      // Deduct from source wallet.
-      if (_selectedWalletId != null) {
-        final src = wallets.firstWhere(
-          (w) => w.id == _selectedWalletId,
-          orElse: () => wallets.first,
+    ref
+        .read(transactionsProvider.notifier)
+        .addAtTop(
+          Transaction(
+            id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
+            title:
+                _category?.name ??
+                (_mode == _EntryMode.income ? 'Income' : 'Expense'),
+            amount: signed,
+            iconData:
+                _category?.displayIcon.codePoint ??
+                Icons.payment_rounded.codePoint,
+            iconBgColor: _category?.displayColor ?? const Color(0xFF78909C),
+            createdAt: _date,
+          ),
         );
-        ref
-            .read(walletsProvider.notifier)
-            .adjustBalance(_selectedWalletId!, src.balance - amount);
-      }
-      // Add to destination wallet.
-      if (_selectedToWalletId != null) {
-        final dst = wallets.firstWhere(
-          (w) => w.id == _selectedToWalletId,
-          orElse: () => wallets.first,
-        );
-        ref
-            .read(walletsProvider.notifier)
-            .adjustBalance(_selectedToWalletId!, dst.balance + amount);
-      }
-    } else {
-      final signed = _mode == _EntryMode.expense ? -amount : amount;
-
-      // Add transaction to the recent list.
-      ref
-          .read(transactionsProvider.notifier)
-          .addAtTop(
-            Transaction(
-              id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
-              title: _noteCtrl.text.trim().isNotEmpty
-                  ? _noteCtrl.text.trim()
-                  : (_category?.name ?? 'Transaction'),
-              amount: signed,
-              iconData:
-                  _category?.displayIcon.codePoint ??
-                  Icons.payment_rounded.codePoint,
-              iconBgColor: _category?.displayColor ?? const Color(0xFF78909C),
-              createdAt: _date,
-            ),
-          );
-
-      // Update the selected wallet balance.
-      if (_selectedWalletId != null && wallets.isNotEmpty) {
-        final wallet = wallets.firstWhere(
-          (w) => w.id == _selectedWalletId,
-          orElse: () => wallets.first,
-        );
-        ref
-            .read(walletsProvider.notifier)
-            .adjustBalance(_selectedWalletId!, wallet.balance + signed);
-      } else {
-        // Fallback: update homeProvider balance directly.
-        ref.read(homeProvider.notifier).adjustBalance(signed);
-      }
-    }
+    ref.read(homeProvider.notifier).adjustBalance(signed);
 
     if (mounted) Navigator.of(context).pop();
-  }
-
-  // ─── Wallet label helpers ──────────────────────────────────────────────────
-
-  String _walletLabel(String? id, List<WalletEntry> wallets) {
-    if (id == null || wallets.isEmpty) return 'Select Wallet';
-    final found = wallets.where((w) => w.id == id);
-    return found.isNotEmpty ? found.first.name : 'Select Wallet';
-  }
-
-  IconData _walletIcon(String? id, List<WalletEntry> wallets) {
-    if (id == null || wallets.isEmpty) {
-      return Icons.account_balance_wallet_outlined;
-    }
-    final found = wallets.where((w) => w.id == id);
-    return found.isNotEmpty
-        ? found.first.type.icon
-        : Icons.account_balance_wallet_outlined;
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
-    final wallets = ref.watch(walletsProvider);
-    final modeColor = _mode.pillColor(cs);
 
+    // ── Budget alert (reactive) ────────────────────────────────────────
     final parsedAmount = _parsedAmount ?? 0;
-    final showBudgetAlert =
+    final showAlert =
         _mode == _EntryMode.expense &&
         ref.watch(budgetAlertForAmountProvider(parsedAmount));
-    final budgetSettings = ref.watch(budgetSettingsProvider);
+    final threshold = ref.watch(
+      budgetSettingsProvider.select((s) => s.alertThreshold),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -341,7 +196,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Drag handle ───────────────────────────────────────────────
+            // Drag handle
             Center(
               child: Container(
                 width: 40,
@@ -354,30 +209,29 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             ),
             const SizedBox(height: 20),
 
-            // ── 3-way segment control ─────────────────────────────────────
+            // Segment control
             _SegmentControl(mode: _mode, onChanged: _onModeChanged),
             const SizedBox(height: 14),
 
-            // ── Budget alert (dynamic) ────────────────────────────────────
+            // Budget alert — animated show/hide
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 260),
               transitionBuilder: (child, animation) => SizeTransition(
                 sizeFactor: animation,
                 child: FadeTransition(opacity: animation, child: child),
               ),
-              child: showBudgetAlert
+              child: showAlert
                   ? Padding(
-                      key: const ValueKey('budget_alert'),
+                      key: const ValueKey('alert'),
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _BudgetAlertBanner(
-                        thresholdPercent: (budgetSettings.alertThreshold * 100)
-                            .toInt(),
+                        thresholdPercent: (threshold * 100).toInt(),
                       ),
                     )
                   : const SizedBox.shrink(key: ValueKey('no_alert')),
             ),
 
-            // ── Amount display ────────────────────────────────────────────
+            // Amount display
             Text(
               'Amount',
               textAlign: TextAlign.center,
@@ -389,145 +243,68 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             ),
             const SizedBox(height: 4),
             AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 220),
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
                 color: _buffer.isEmpty
                     ? cs.onSurfaceVariant.withValues(alpha: 0.4)
-                    : modeColor,
+                    : (_mode == _EntryMode.expense
+                          ? cs.error
+                          : const Color(0xFF27AE60)),
                 fontSize: 52,
                 fontWeight: FontWeight.w700,
                 height: 1.1,
                 letterSpacing: -1.5,
-                fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
               ),
               child: Text(_amountDisplay, textAlign: TextAlign.center),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
 
-            // ── Note input ────────────────────────────────────────────────
-            TextField(
-              controller: _noteCtrl,
-              style: TextStyle(color: cs.onSurface, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Add a note (optional)',
-                hintStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
-                prefixIcon: Icon(
-                  Icons.edit_note_rounded,
-                  color: cs.onSurfaceVariant,
-                  size: 20,
+            // Category + Date row
+            Row(
+              children: [
+                Expanded(
+                  child: _InputBox(
+                    icon: _category?.displayIcon ?? Icons.category_rounded,
+                    label: _category?.name ?? 'Category',
+                    onTap: _pickCategory,
+                  ),
                 ),
-                filled: true,
-                fillColor: cs.surfaceContainerHighest,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _InputBox(
+                    icon: Icons.calendar_today_rounded,
+                    label: _formatDate(_date),
+                    onTap: _pickDate,
+                  ),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: modeColor, width: 1.5),
-                ),
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
-            // ── Transfer mode: From / To wallet row ────────────────────────
-            if (_mode == _EntryMode.transfer) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _InputBox(
-                      icon: _walletIcon(_selectedWalletId, wallets),
-                      label: _walletLabel(_selectedWalletId, wallets),
-                      subLabel: 'From',
-                      onTap: () => _pickWallet(),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: cs.onSurfaceVariant,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _InputBox(
-                      icon: _walletIcon(_selectedToWalletId, wallets),
-                      label: _walletLabel(_selectedToWalletId, wallets),
-                      subLabel: 'To',
-                      onTap: () => _pickWallet(isDestination: true),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _InputBox(
-                icon: Icons.calendar_today_rounded,
-                label: _formatDate(_date),
-                onTap: _pickDate,
-              ),
-              const SizedBox(height: 14),
-            ] else ...[
-              // ── Category  |  Wallet  |  Date ─────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: _InputBox(
-                      icon: _category?.displayIcon ?? Icons.category_rounded,
-                      label: _category?.name ?? 'Category',
-                      onTap: _pickCategory,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _InputBox(
-                      icon: _walletIcon(_selectedWalletId, wallets),
-                      label: _walletLabel(_selectedWalletId, wallets),
-                      onTap: () => _pickWallet(),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _InputBox(
-                      icon: Icons.calendar_today_rounded,
-                      label: _formatDate(_date),
-                      onTap: _pickDate,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-            ],
-
-            // ── Numpad ────────────────────────────────────────────────────
+            // Numpad
             _Numpad(onKey: _onKey),
             const SizedBox(height: 14),
 
-            // ── Dynamic action button ─────────────────────────────────────
+            // Add Transaction button
             SizedBox(
               height: 56,
               child: FilledButton(
                 onPressed: _canSave ? _save : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: modeColor,
+                  backgroundColor: _mode == _EntryMode.expense
+                      ? cs.error
+                      : const Color(0xFF27AE60),
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: modeColor.withValues(alpha: 0.35),
+                  disabledBackgroundColor: cs.onSurface.withValues(alpha: 0.12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
                 ),
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: 180),
                   child: Text(
-                    _buttonLabel,
-                    key: ValueKey(_buttonLabel),
+                    _mode == _EntryMode.expense ? 'Add Expense' : 'Add Income',
+                    key: ValueKey(_mode),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -543,7 +320,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 }
 
-// ─── 3-Way Segment Control ────────────────────────────────────────────────────
+// ─── Segment Control ──────────────────────────────────────────────────────────
 
 class _SegmentControl extends StatelessWidget {
   const _SegmentControl({required this.mode, required this.onChanged});
@@ -554,7 +331,6 @@ class _SegmentControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final modes = _EntryMode.values;
 
     return Container(
       height: 50,
@@ -565,42 +341,45 @@ class _SegmentControl extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final segW = constraints.maxWidth / modes.length;
+          final halfW = constraints.maxWidth / 2;
 
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Animated sliding pill.
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
-                left: segW * modes.indexOf(mode),
+                left: mode == _EntryMode.income ? 0 : halfW,
                 top: 0,
                 bottom: 0,
-                width: segW,
+                width: halfW,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   decoration: BoxDecoration(
-                    color: mode.pillColor(cs),
+                    color: mode == _EntryMode.expense
+                        ? cs.error
+                        : const Color(0xFF27AE60),
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
               ),
-              // Labels on top of the pill.
               Row(
-                children: modes
-                    .map(
-                      (m) => Expanded(
-                        child: _SegTab(
-                          label: m.label,
-                          selected: m == mode,
-                          selectedColor: Colors.white,
-                          unselectedColor: cs.onSurfaceVariant,
-                          onTap: () => onChanged(m),
-                        ),
-                      ),
-                    )
-                    .toList(),
+                children: [
+                  Expanded(
+                    child: _SegTab(
+                      label: 'Income',
+                      selected: mode == _EntryMode.income,
+                      onTap: () => onChanged(_EntryMode.income),
+                    ),
+                  ),
+                  Expanded(
+                    child: _SegTab(
+                      label: 'Expense',
+                      selected: mode == _EntryMode.expense,
+                      onTap: () => onChanged(_EntryMode.expense),
+                    ),
+                  ),
+                ],
               ),
             ],
           );
@@ -614,19 +393,16 @@ class _SegTab extends StatelessWidget {
   const _SegTab({
     required this.label,
     required this.selected,
-    required this.selectedColor,
-    required this.unselectedColor,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
-  final Color selectedColor;
-  final Color unselectedColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -635,9 +411,9 @@ class _SegTab extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           style: TextStyle(
             fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-            color: selected ? selectedColor : unselectedColor,
+            color: selected ? Colors.white : cs.onSurfaceVariant,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 14,
+            fontSize: 15,
           ),
           child: Text(label),
         ),
@@ -693,7 +469,7 @@ class _BudgetAlertBanner extends StatelessWidget {
                 Text(
                   'This exceeds your $thresholdPercent% budget limit!',
                   style: TextStyle(
-                    color: cs.onErrorContainer.withValues(alpha: 0.8),
+                    color: cs.onErrorContainer.withValues(alpha: 0.85),
                     fontSize: 12,
                   ),
                 ),
@@ -713,13 +489,11 @@ class _InputBox extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.subLabel,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final String? subLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -728,48 +502,30 @@ class _InputBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            if (subLabel != null) ...[
-              Text(
-                subLabel!,
+            Icon(icon, size: 18, color: cs.onSurface),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
                 style: TextStyle(
-                  color: cs.onSurfaceVariant,
-                  fontSize: 10,
+                  color: cs.onSurface,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 3),
-            ],
-            Row(
-              children: [
-                Icon(icon, size: 15, color: cs.onSurface),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 16,
-                  color: cs.onSurfaceVariant,
-                ),
-              ],
+            ),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 20,
+              color: cs.onSurfaceVariant,
             ),
           ],
         ),
@@ -905,7 +661,7 @@ class _CategorySheet extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: categories.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 2),
+              separatorBuilder: (ctx, i) => const SizedBox(height: 2),
               itemBuilder: (ctx, i) {
                 final cat = categories[i];
                 final isSelected = cat.id == selected?.id;
@@ -949,149 +705,6 @@ class _CategorySheet extends StatelessWidget {
                                     ? FontWeight.w600
                                     : FontWeight.w500,
                               ),
-                            ),
-                          ),
-                          if (isSelected)
-                            Icon(
-                              Icons.check_circle_rounded,
-                              color: cs.primary,
-                              size: 22,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Wallet Picker Sheet ──────────────────────────────────────────────────────
-
-class _WalletPickerSheet extends StatelessWidget {
-  const _WalletPickerSheet({
-    required this.wallets,
-    required this.selectedId,
-    required this.title,
-    this.excludeId,
-  });
-
-  final List<WalletEntry> wallets;
-  final String? selectedId;
-  final String? excludeId;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
-
-    final displayWallets = wallets.where((w) => w.id != excludeId).toList();
-
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomPad),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: cs.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: cs.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: displayWallets.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 2),
-              itemBuilder: (ctx, i) {
-                final wallet = displayWallets[i];
-                final isSelected = wallet.id == selectedId;
-
-                return Material(
-                  color: isSelected
-                      ? cs.primaryContainer.withValues(alpha: 0.55)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    onTap: () => Navigator.of(ctx).pop(wallet.id),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: wallet.displayColor.withValues(
-                                alpha: 0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              wallet.type.icon,
-                              color: wallet.displayColor,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  wallet.name,
-                                  style: TextStyle(
-                                    color: cs.onSurface,
-                                    fontSize: 15,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  wallet.balance.formatted,
-                                  style: TextStyle(
-                                    color: wallet.balance < 0
-                                        ? cs.error
-                                        : cs.onSurfaceVariant,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                           if (isSelected)
