@@ -1,119 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../budget/providers/budget_providers.dart';
+import '../../categories/domain/category_model.dart';
+import '../../categories/providers/category_provider.dart';
 import '../../home/domain/transaction.dart';
 import '../../home/providers/home_provider.dart';
 import '../../home/providers/transactions_provider.dart';
 
-// ─── Domain ───────────────────────────────────────────────────────────────────
+// ─── Entry mode ───────────────────────────────────────────────────────────────
 
 enum _EntryMode { income, expense }
-
-class _Category {
-  const _Category({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-
-  final String id;
-  final String label;
-  final IconData icon;
-  final Color color;
-}
-
-// ─── Category data ────────────────────────────────────────────────────────────
-
-const _kExpense = <_Category>[
-  _Category(
-    id: 'food',
-    label: 'Food',
-    icon: Icons.restaurant_rounded,
-    color: Color(0xFFE57373),
-  ),
-  _Category(
-    id: 'transport',
-    label: 'Transport',
-    icon: Icons.directions_car_rounded,
-    color: Color(0xFF64B5F6),
-  ),
-  _Category(
-    id: 'shopping',
-    label: 'Shopping',
-    icon: Icons.shopping_bag_rounded,
-    color: Color(0xFFBA68C8),
-  ),
-  _Category(
-    id: 'bills',
-    label: 'Bills',
-    icon: Icons.receipt_long_rounded,
-    color: Color(0xFFFFB74D),
-  ),
-  _Category(
-    id: 'subscription',
-    label: 'Subscription',
-    icon: Icons.subscriptions_rounded,
-    color: Color(0xFF4FC3F7),
-  ),
-  _Category(
-    id: 'entertainment',
-    label: 'Entertainment',
-    icon: Icons.movie_rounded,
-    color: Color(0xFFF06292),
-  ),
-  _Category(
-    id: 'health',
-    label: 'Healthcare',
-    icon: Icons.local_hospital_rounded,
-    color: Color(0xFF81C784),
-  ),
-  _Category(
-    id: 'other_exp',
-    label: 'Other',
-    icon: Icons.more_horiz_rounded,
-    color: Color(0xFF78909C),
-  ),
-];
-
-const _kIncome = <_Category>[
-  _Category(
-    id: 'salary',
-    label: 'Salary',
-    icon: Icons.account_balance_wallet_rounded,
-    color: Color(0xFF81C784),
-  ),
-  _Category(
-    id: 'freelance',
-    label: 'Freelance',
-    icon: Icons.work_rounded,
-    color: Color(0xFF4FC3F7),
-  ),
-  _Category(
-    id: 'investment',
-    label: 'Investment',
-    icon: Icons.trending_up_rounded,
-    color: Color(0xFFFFD54F),
-  ),
-  _Category(
-    id: 'gift',
-    label: 'Gift',
-    icon: Icons.card_giftcard_rounded,
-    color: Color(0xFFF06292),
-  ),
-  _Category(
-    id: 'rental',
-    label: 'Rental',
-    icon: Icons.home_rounded,
-    color: Color(0xFFAED581),
-  ),
-  _Category(
-    id: 'other_inc',
-    label: 'Other',
-    icon: Icons.more_horiz_rounded,
-    color: Color(0xFF90A4AE),
-  ),
-];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -132,13 +29,12 @@ String _formatDate(DateTime d) {
     'Nov',
     'Dec',
   ];
-  return '${d.day} ${months[d.month - 1]} ${d.year},';
+  return '${d.day} ${months[d.month - 1]} ${d.year}';
 }
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
 /// Full-height transaction entry sheet.
-/// Opened directly by tapping the center (+) button in the bottom nav.
 class AddTransactionSheet extends ConsumerStatefulWidget {
   const AddTransactionSheet({super.key});
 
@@ -150,18 +46,29 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
 class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   _EntryMode _mode = _EntryMode.expense;
   String _buffer = '';
-  late _Category _category;
+  Category? _category;
   DateTime _date = DateTime.now();
-  bool _showAlert = true;
 
   @override
   void initState() {
     super.initState();
-    _category = _kExpense.first;
+    // Initialise category after first frame so providers are ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cats = ref.read(categoryProvider);
+      final expCats = cats
+          .where((c) => c.type == CategoryType.expense)
+          .toList();
+      if (expCats.isNotEmpty) setState(() => _category = expCats.first);
+    });
   }
 
-  List<_Category> get _categories =>
-      _mode == _EntryMode.income ? _kIncome : _kExpense;
+  List<Category> get _currentCategories {
+    final cats = ref.read(categoryProvider);
+    return _mode == _EntryMode.income
+        ? cats.where((c) => c.type == CategoryType.income).toList()
+        : cats.where((c) => c.type == CategoryType.expense).toList();
+  }
 
   double? get _parsedAmount {
     if (_buffer.isEmpty || _buffer == '.') return null;
@@ -169,9 +76,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   String get _amountDisplay {
-    if (_buffer.isEmpty) return '\$0';
-    if (_buffer == '.') return '\$0.';
-    return '\$$_buffer';
+    if (_buffer.isEmpty) return '₺0';
+    if (_buffer == '.') return '₺0.';
+    return '₺$_buffer';
   }
 
   bool get _canSave {
@@ -180,9 +87,13 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   void _onModeChanged(_EntryMode m) {
+    final cats = ref.read(categoryProvider);
     setState(() {
       _mode = m;
-      _category = m == _EntryMode.income ? _kIncome.first : _kExpense.first;
+      final filtered = m == _EntryMode.income
+          ? cats.where((c) => c.type == CategoryType.income).toList()
+          : cats.where((c) => c.type == CategoryType.expense).toList();
+      _category = filtered.isNotEmpty ? filtered.first : null;
     });
   }
 
@@ -205,7 +116,6 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         _buffer = k;
         return;
       }
-      // Guard: max 2 decimal places
       final dot = _buffer.indexOf('.');
       if (dot != -1 && _buffer.length - dot > 2) return;
       _buffer += k;
@@ -219,22 +129,18 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    if (picked != null && mounted) {
-      setState(() => _date = picked);
-    }
+    if (picked != null && mounted) setState(() => _date = picked);
   }
 
   Future<void> _pickCategory() async {
-    final result = await showModalBottomSheet<_Category>(
+    final cats = _currentCategories;
+    final result = await showModalBottomSheet<Category>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) =>
-          _CategorySheet(categories: _categories, selected: _category),
+      builder: (_) => _CategorySheet(categories: cats, selected: _category),
     );
-    if (result != null && mounted) {
-      setState(() => _category = result);
-    }
+    if (result != null && mounted) setState(() => _category = result);
   }
 
   void _save() {
@@ -248,10 +154,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         .addAtTop(
           Transaction(
             id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
-            title: _category.label,
+            title:
+                _category?.name ??
+                (_mode == _EntryMode.income ? 'Income' : 'Expense'),
             amount: signed,
-            iconData: _category.icon.codePoint,
-            iconBgColor: _category.color,
+            iconData:
+                _category?.displayIcon.codePoint ??
+                Icons.payment_rounded.codePoint,
+            iconBgColor: _category?.displayColor ?? const Color(0xFF78909C),
+            createdAt: _date,
           ),
         );
     ref.read(homeProvider.notifier).adjustBalance(signed);
@@ -263,6 +174,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
+
+    // ── Budget alert (reactive) ────────────────────────────────────────
+    final parsedAmount = _parsedAmount ?? 0;
+    final showAlert =
+        _mode == _EntryMode.expense &&
+        ref.watch(budgetAlertForAmountProvider(parsedAmount));
+    final threshold = ref.watch(
+      budgetSettingsProvider.select((s) => s.alertThreshold),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -289,15 +209,27 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             ),
             const SizedBox(height: 20),
 
-            // Segmented control
+            // Segment control
             _SegmentControl(mode: _mode, onChanged: _onModeChanged),
             const SizedBox(height: 14),
 
-            // Budget alert
-            if (_showAlert) ...[
-              _BudgetAlert(onDismiss: () => setState(() => _showAlert = false)),
-              const SizedBox(height: 14),
-            ],
+            // Budget alert — animated show/hide
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              transitionBuilder: (child, animation) => SizeTransition(
+                sizeFactor: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: showAlert
+                  ? Padding(
+                      key: const ValueKey('alert'),
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _BudgetAlertBanner(
+                        thresholdPercent: (threshold * 100).toInt(),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('no_alert')),
+            ),
 
             // Amount display
             Text(
@@ -310,16 +242,20 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              _amountDisplay,
-              textAlign: TextAlign.center,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
-                color: cs.onSurface,
+                color: _buffer.isEmpty
+                    ? cs.onSurfaceVariant.withValues(alpha: 0.4)
+                    : (_mode == _EntryMode.expense
+                          ? cs.error
+                          : const Color(0xFF27AE60)),
                 fontSize: 52,
                 fontWeight: FontWeight.w700,
                 height: 1.1,
                 letterSpacing: -1.5,
               ),
+              child: Text(_amountDisplay, textAlign: TextAlign.center),
             ),
             const SizedBox(height: 18),
 
@@ -328,8 +264,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               children: [
                 Expanded(
                   child: _InputBox(
-                    icon: _category.icon,
-                    label: _category.label,
+                    icon: _category?.displayIcon ?? Icons.category_rounded,
+                    label: _category?.name ?? 'Category',
                     onTap: _pickCategory,
                   ),
                 ),
@@ -355,16 +291,25 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               child: FilledButton(
                 onPressed: _canSave ? _save : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: cs.onPrimary,
-                  disabledBackgroundColor: cs.primary.withValues(alpha: 0.35),
+                  backgroundColor: _mode == _EntryMode.expense
+                      ? cs.error
+                      : const Color(0xFF27AE60),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: cs.onSurface.withValues(alpha: 0.12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
                 ),
-                child: const Text(
-                  'Add Transaction',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Text(
+                    _mode == _EntryMode.expense ? 'Add Expense' : 'Add Income',
+                    key: ValueKey(_mode),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -401,7 +346,6 @@ class _SegmentControl extends StatelessWidget {
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Animated sliding pill
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
@@ -409,22 +353,22 @@ class _SegmentControl extends StatelessWidget {
                 top: 0,
                 bottom: 0,
                 width: halfW,
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
                   decoration: BoxDecoration(
-                    color: cs.onSurface,
+                    color: mode == _EntryMode.expense
+                        ? cs.error
+                        : const Color(0xFF27AE60),
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
               ),
-              // Tab labels (above the pill)
               Row(
                 children: [
                   Expanded(
                     child: _SegTab(
                       label: 'Income',
                       selected: mode == _EntryMode.income,
-                      selectedColor: cs.surface,
-                      unselectedColor: cs.onSurfaceVariant,
                       onTap: () => onChanged(_EntryMode.income),
                     ),
                   ),
@@ -432,8 +376,6 @@ class _SegmentControl extends StatelessWidget {
                     child: _SegTab(
                       label: 'Expense',
                       selected: mode == _EntryMode.expense,
-                      selectedColor: cs.surface,
-                      unselectedColor: cs.onSurfaceVariant,
                       onTap: () => onChanged(_EntryMode.expense),
                     ),
                   ),
@@ -451,19 +393,16 @@ class _SegTab extends StatelessWidget {
   const _SegTab({
     required this.label,
     required this.selected,
-    required this.selectedColor,
-    required this.unselectedColor,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
-  final Color selectedColor;
-  final Color unselectedColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -472,7 +411,7 @@ class _SegTab extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           style: TextStyle(
             fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-            color: selected ? selectedColor : unselectedColor,
+            color: selected ? Colors.white : cs.onSurfaceVariant,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 15,
           ),
@@ -485,12 +424,10 @@ class _SegTab extends StatelessWidget {
 
 // ─── Budget Alert Banner ──────────────────────────────────────────────────────
 
-class _BudgetAlert extends StatelessWidget {
-  const _BudgetAlert({required this.onDismiss});
+class _BudgetAlertBanner extends StatelessWidget {
+  const _BudgetAlertBanner({required this.thresholdPercent});
 
-  final VoidCallback onDismiss;
-
-  static const _blue = Color(0xFF2196F3);
+  final int thresholdPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -499,20 +436,20 @@ class _BudgetAlert extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
+        color: cs.errorContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant),
+        border: Border.all(color: cs.error.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
-            decoration: const BoxDecoration(
-              color: Color(0x1A2196F3),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: cs.error.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.info_rounded, color: _blue, size: 20),
+            child: Icon(Icons.warning_amber_rounded, color: cs.error, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -521,28 +458,22 @@ class _BudgetAlert extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Budget Alert',
+                  '⚠️ Budget Alert',
                   style: TextStyle(
-                    color: cs.onSurface,
+                    color: cs.onErrorContainer,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "You've spent 57% of your monthly budget",
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                  'This exceeds your $thresholdPercent% budget limit!',
+                  style: TextStyle(
+                    color: cs.onErrorContainer.withValues(alpha: 0.85),
+                    fontSize: 12,
+                  ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onDismiss,
-            child: Icon(
-              Icons.close_rounded,
-              size: 18,
-              color: cs.onSurfaceVariant,
             ),
           ),
         ],
@@ -683,8 +614,8 @@ class _NumKey extends StatelessWidget {
 class _CategorySheet extends StatelessWidget {
   const _CategorySheet({required this.categories, required this.selected});
 
-  final List<_Category> categories;
-  final _Category selected;
+  final List<Category> categories;
+  final Category? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -730,10 +661,10 @@ class _CategorySheet extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: categories.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 2),
+              separatorBuilder: (ctx, i) => const SizedBox(height: 2),
               itemBuilder: (ctx, i) {
                 final cat = categories[i];
-                final isSelected = cat.id == selected.id;
+                final isSelected = cat.id == selected?.id;
 
                 return Material(
                   color: isSelected
@@ -754,15 +685,19 @@ class _CategorySheet extends StatelessWidget {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: cat.color.withValues(alpha: 0.15),
+                              color: cat.displayColor.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(cat.icon, color: cat.color, size: 22),
+                            child: Icon(
+                              cat.displayIcon,
+                              color: cat.displayColor,
+                              size: 22,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Text(
-                              cat.label,
+                              cat.name,
                               style: TextStyle(
                                 color: cs.onSurface,
                                 fontSize: 15,

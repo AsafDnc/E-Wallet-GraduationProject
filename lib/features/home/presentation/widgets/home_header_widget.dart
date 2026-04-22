@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/utils/currency_formatter.dart';
 import '../../providers/home_provider.dart';
 
 /// Displays the top section of the Home screen:
@@ -89,18 +90,9 @@ class _BalanceRowState extends State<_BalanceRow> {
   String? _cachedWidthKey;
   double? _cachedVisibleWidth;
 
-  String get _formattedBalance {
-    final parts = widget.balance.toStringAsFixed(0).split('');
-    final buffer = StringBuffer('\$');
-    for (int i = 0; i < parts.length; i++) {
-      if (i > 0 && (parts.length - i) % 3 == 0) buffer.write(',');
-      buffer.write(parts[i]);
-    }
-    return buffer.toString();
-  }
+  String get _formattedBalance => widget.balance.formattedCompact;
 
-  /// Returns the digits-only portion of the balance (no $ or commas).
-  String get _digitsOnly => widget.balance.toStringAsFixed(0);
+  String get _digitsOnly => widget.balance.abs().toStringAsFixed(0);
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +127,7 @@ class _BalanceRowState extends State<_BalanceRow> {
               ),
               // Visible layer: real balance or masked.
               Text(
-                widget.isVisible ? formatted : '\$${'*' * _digitsOnly.length}',
+                widget.isVisible ? formatted : '₺ ${'*' * _digitsOnly.length}',
                 style: themedBalanceStyle,
                 maxLines: 1,
                 overflow: TextOverflow.clip,
