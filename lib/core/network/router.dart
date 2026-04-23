@@ -15,6 +15,7 @@ import '../../features/profile/presentation/screens/daily_limits_screen.dart';
 import '../../features/profile/presentation/screens/password_pin_screen.dart';
 import '../../features/profile/presentation/screens/personal_info_screen.dart';
 import '../../features/profile/presentation/screens/two_factor_auth_screen.dart';
+import '../../features/wallets/presentation/screens/my_wallets_screen.dart';
 
 /// A [ChangeNotifier] that fires whenever the Supabase auth state changes,
 /// which causes GoRouter to re-evaluate its [redirect] callback.
@@ -125,6 +126,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _horizontalPushPage(
           pageKey: state.pageKey,
           child: const CategoriesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/wallets',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const MyWalletsScreen(),
         ),
       ),
       GoRoute(

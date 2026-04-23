@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/models/wallet_entry_model.dart';
 import '../providers/wallet_providers.dart';
@@ -35,7 +36,7 @@ class MyWalletsScreen extends ConsumerWidget {
             ),
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onSurface),
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => context.pop(),
             ),
           ),
 
