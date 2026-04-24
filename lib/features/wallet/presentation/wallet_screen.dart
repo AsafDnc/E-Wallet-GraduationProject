@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/theme_provider.dart';
 
@@ -147,6 +148,38 @@ Map<DateTime, List<_TxRecord>> _groupByDate(List<_TxRecord> records) {
   return result;
 }
 
+// ─── App bar leading: shell callback or GoRouter pop ───────────────────────────
+
+class _WalletBackButton extends StatelessWidget {
+  const _WalletBackButton({this.onBackTap});
+
+  final VoidCallback? onBackTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final canGoBack = onBackTap != null || context.canPop();
+    if (!canGoBack) {
+      return const SizedBox.shrink();
+    }
+    return IconButton(
+      icon: Icon(
+        Icons.arrow_back_ios_new_rounded,
+        color: cs.onSurface,
+        size: 20,
+      ),
+      onPressed: () {
+        final cb = onBackTap;
+        if (cb != null) {
+          cb();
+        } else {
+          context.pop();
+        }
+      },
+    );
+  }
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 class WalletScreen extends ConsumerWidget {
@@ -180,6 +213,7 @@ class WalletScreen extends ConsumerWidget {
             pinned: true,
             automaticallyImplyLeading: false,
             titleSpacing: 20,
+            leading: _WalletBackButton(onBackTap: onBackTap),
             title: Text(
               'Transactions',
               style: TextStyle(
