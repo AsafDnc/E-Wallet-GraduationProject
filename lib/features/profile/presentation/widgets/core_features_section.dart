@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'profile_section_title.dart';
 
 class CoreFeaturesSection extends StatelessWidget {
   const CoreFeaturesSection({super.key});
+
+  static void _soon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Coming soon'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +24,7 @@ class CoreFeaturesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Wallet & Finance'),
+        const ProfileSectionTitle(title: 'Wallet & Finance'),
         _CardWrapper(
           children: [
             ListTile(
@@ -48,7 +61,7 @@ class CoreFeaturesSection extends StatelessWidget {
                   Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                 ],
               ),
-              onTap: () {},
+              onTap: () => context.push('/wallet'),
             ),
             _InternalDivider(),
             ListTile(
@@ -59,7 +72,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
             _InternalDivider(),
             ListTile(
@@ -70,7 +83,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
             _InternalDivider(),
             ListTile(
@@ -84,7 +97,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 Icons.download_rounded,
                 color: cs.onSurfaceVariant,
               ),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
           ],
         ),
@@ -94,28 +107,6 @@ class CoreFeaturesSection extends StatelessWidget {
 }
 
 // ─── Shared sub-widgets ───────────────────────────────────────────────────────
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: cs.primary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-}
 
 class _CardWrapper extends StatelessWidget {
   const _CardWrapper({required this.children});

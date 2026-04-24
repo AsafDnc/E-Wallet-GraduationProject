@@ -730,7 +730,7 @@ class _CategorySheet extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: categories.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 2),
+              separatorBuilder: (_, _) => const SizedBox(height: 2),
               itemBuilder: (ctx, i) {
                 final cat = categories[i];
                 final isSelected = cat.id == selected.id;

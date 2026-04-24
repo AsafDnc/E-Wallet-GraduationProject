@@ -5,26 +5,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'supabase_init.dart';
+
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
 import '../../features/navigation/presentation/app_shell_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/wallet/presentation/wallet_screen.dart';
 
 /// A [ChangeNotifier] that fires whenever the Supabase auth state changes,
 /// which causes GoRouter to re-evaluate its [redirect] callback.
 class _AuthStateRefreshNotifier extends ChangeNotifier {
   _AuthStateRefreshNotifier() {
+    if (!supabasePluginReady) return;
     _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       notifyListeners();
     });
   }
 
-  late final StreamSubscription<AuthState> _subscription;
+  StreamSubscription<AuthState>? _subscription;
 
   @override
   void dispose() {
-    _subscription.cancel();
+    _subscription?.cancel();
     super.dispose();
+  }
+}
+
+bool _hasSupabaseSession() {
+  if (!supabasePluginReady) return false;
+  try {
+    return Supabase.instance.client.auth.currentSession != null;
+  } catch (_) {
+    return false;
   }
 }
 
@@ -74,12 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refreshNotifier.dispose);
 
   return GoRouter(
-    initialLocation: Supabase.instance.client.auth.currentSession != null
-        ? '/home'
-        : '/login',
+    initialLocation: _hasSupabaseSession() ? '/home' : '/login',
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
-      final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+      final isLoggedIn = _hasSupabaseSession();
       final isAuthRoute =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup';
@@ -115,6 +126,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _horizontalPushPage(
           pageKey: state.pageKey,
           child: const ProfileScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/wallet',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const WalletScreen(),
         ),
       ),
     ],

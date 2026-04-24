@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/supabase_client_provider.dart';
+import '../../../core/network/supabase_init.dart';
 
 enum AuthStatus { idle, loading, success, error }
 
@@ -26,10 +27,15 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Synchronously checks for an existing Supabase session on startup.
   @override
   AuthState build() {
-    final hasSession = _client.auth.currentSession != null;
-    return hasSession
-        ? const AuthState(status: AuthStatus.success)
-        : const AuthState();
+    if (!supabasePluginReady) return const AuthState();
+    try {
+      final hasSession = _client.auth.currentSession != null;
+      return hasSession
+          ? const AuthState(status: AuthStatus.success)
+          : const AuthState();
+    } catch (_) {
+      return const AuthState();
+    }
   }
 
   Future<void> login({required String email, required String password}) async {
