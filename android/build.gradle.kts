@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 import com.android.build.gradle.LibraryExtension
 
->>>>>>> feature/profile-page-ui
 allprojects {
     repositories {
         google()
@@ -16,8 +13,6 @@ val newBuildDir: Directory =
         .get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
-<<<<<<< HEAD
-=======
 // AGP 8+: plugins must declare `namespace`. Legacy packages (e.g. isar_flutter_libs)
 // omit it; derive from Gradle `group` (matches their AndroidManifest package).
 subprojects {
@@ -36,7 +31,6 @@ subprojects {
     }
 }
 
->>>>>>> feature/profile-page-ui
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)

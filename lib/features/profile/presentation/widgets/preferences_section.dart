@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/theme_provider.dart';
 import '../../providers/profile_providers.dart';
+import 'profile_section_title.dart';
 
 class PreferencesSection extends ConsumerWidget {
   const PreferencesSection({super.key});
@@ -18,7 +19,7 @@ class PreferencesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Preferences'),
+        const ProfileSectionTitle(title: 'Preferences'),
         _CardWrapper(
           children: [
             // ── Currency ───────────────────────────────────────────────────
@@ -112,28 +113,6 @@ class PreferencesSection extends ConsumerWidget {
 }
 
 // ─── Shared sub-widgets ───────────────────────────────────────────────────────
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: cs.primary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-}
 
 class _CardWrapper extends StatelessWidget {
   const _CardWrapper({required this.children});

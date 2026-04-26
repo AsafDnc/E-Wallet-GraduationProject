@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'profile_section_title.dart';
+
 class CoreFeaturesSection extends StatelessWidget {
   const CoreFeaturesSection({super.key});
+
+  static void _soon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Coming soon'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +24,7 @@ class CoreFeaturesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Wallet & Finance'),
+        const ProfileSectionTitle(title: 'Wallet & Finance'),
         _CardWrapper(
           children: [
             ListTile(
@@ -85,12 +97,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 Icons.download_rounded,
                 color: cs.onSurfaceVariant,
               ),
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Coming Soon...'),
-                  duration: Duration(seconds: 2),
-                ),
-              ),
+              onTap: () => _soon(context),
             ),
           ],
         ),
@@ -100,29 +107,6 @@ class CoreFeaturesSection extends StatelessWidget {
 }
 
 // ─── Shared sub-widgets ───────────────────────────────────────────────────────
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: cs.onSurface,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
 
 class _CardWrapper extends StatelessWidget {
   const _CardWrapper({required this.children});

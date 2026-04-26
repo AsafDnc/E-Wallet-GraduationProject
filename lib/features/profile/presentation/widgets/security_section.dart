@@ -2,9 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/profile_providers.dart';
+import 'profile_section_title.dart';
 
 class SecuritySection extends ConsumerWidget {
   const SecuritySection({super.key});
+
+  static void _soon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Coming soon'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -15,7 +26,7 @@ class SecuritySection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Security'),
+        const ProfileSectionTitle(title: 'Security'),
         _CardWrapper(
           children: [
             ListTile(
@@ -26,7 +37,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
             _InternalDivider(),
             ListTile(
@@ -37,7 +48,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
             _InternalDivider(),
             ListTile(
@@ -62,7 +73,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
             _InternalDivider(),
             ListTile(
@@ -76,7 +87,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () {},
+              onTap: () => _soon(context),
             ),
           ],
         ),
@@ -86,28 +97,6 @@ class SecuritySection extends ConsumerWidget {
 }
 
 // ─── Shared sub-widgets ───────────────────────────────────────────────────────
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: cs.primary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-}
 
 class _CardWrapper extends StatelessWidget {
   const _CardWrapper({required this.children});
