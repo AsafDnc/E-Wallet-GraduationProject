@@ -1,3 +1,5 @@
-/// Set to `true` in [main] only after [Supabase.initialize] completes successfully.
-/// Used by routing so we never touch [Supabase.instance] when init failed.
+/// `true` only after [Supabase.initialize] succeeds in [main].
+///
+/// Router and other code must not call [Supabase.instance] for auth/session
+/// until this is `true`, otherwise the client may be uninitialized.
 bool supabasePluginReady = false;

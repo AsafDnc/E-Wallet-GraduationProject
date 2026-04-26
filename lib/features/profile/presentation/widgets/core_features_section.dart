@@ -6,6 +6,16 @@ import 'profile_section_title.dart';
 class CoreFeaturesSection extends StatelessWidget {
   const CoreFeaturesSection({super.key});
 
+  static void _soon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Coming soon'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -87,12 +97,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 Icons.download_rounded,
                 color: cs.onSurfaceVariant,
               ),
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Coming Soon...'),
-                  duration: Duration(seconds: 2),
-                ),
-              ),
+              onTap: () => _soon(context),
             ),
           ],
         ),

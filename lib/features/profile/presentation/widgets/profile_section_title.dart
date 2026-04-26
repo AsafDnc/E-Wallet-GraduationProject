@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// Profile screen section headings (Wallet & Finance, Security, Preferences).
-/// Uses [ColorScheme.onSurface] so light theme reads as dark text and dark theme as light.
+///
+/// Uses [ColorScheme.onSurface] with shared typography across sections.
 class ProfileSectionTitle extends StatelessWidget {
   const ProfileSectionTitle({super.key, required this.title});
 

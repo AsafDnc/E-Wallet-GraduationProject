@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'widgets/core_features_section.dart';
 import 'widgets/preferences_section.dart';
@@ -32,7 +33,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onSurface),
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                }
+              },
             ),
           ),
 
