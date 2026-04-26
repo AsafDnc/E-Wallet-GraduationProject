@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Profile screen section headings — same typography for Wallet, Security, Preferences.
+/// Profile screen section headings (Wallet & Finance, Security, Preferences).
+///
+/// Uses [ColorScheme.onSurface] with shared typography across sections.
 class ProfileSectionTitle extends StatelessWidget {
   const ProfileSectionTitle({super.key, required this.title});
 

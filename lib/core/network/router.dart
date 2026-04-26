@@ -13,6 +13,10 @@ import '../../features/budget/presentation/budget_screen.dart';
 import '../../features/categories/presentation/categories_screen.dart';
 import '../../features/navigation/presentation/app_shell_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/screens/daily_limits_screen.dart';
+import '../../features/profile/presentation/screens/password_pin_screen.dart';
+import '../../features/profile/presentation/screens/personal_info_screen.dart';
+import '../../features/profile/presentation/screens/two_factor_auth_screen.dart';
 import '../../features/subscriptions/presentation/subscriptions_screen.dart';
 import '../../features/wallet/presentation/wallet_screen.dart';
 import '../../features/wallets/presentation/screens/my_wallets_screen.dart';
@@ -163,6 +167,34 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _horizontalPushPage(
           pageKey: state.pageKey,
           child: const WalletScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/security/personal-info',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const PersonalInfoScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/security/password-pin',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const PasswordPinScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/security/2fa',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const TwoFactorAuthScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/security/daily-limits',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const DailyLimitsScreen(),
         ),
       ),
     ],

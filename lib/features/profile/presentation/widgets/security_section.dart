@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/profile_providers.dart';
 import 'profile_section_title.dart';
 
 class SecuritySection extends ConsumerWidget {
   const SecuritySection({super.key});
-
-  static void _soon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Coming soon'),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +28,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () => _soon(context),
+              onTap: () => context.push('/security/personal-info'),
             ),
             _InternalDivider(),
             ListTile(
@@ -48,7 +39,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () => _soon(context),
+              onTap: () => context.push('/security/password-pin'),
             ),
             _InternalDivider(),
             ListTile(
@@ -73,7 +64,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () => _soon(context),
+              onTap: () => context.push('/security/2fa'),
             ),
             _InternalDivider(),
             ListTile(
@@ -87,7 +78,7 @@ class SecuritySection extends ConsumerWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () => _soon(context),
+              onTap: () => context.push('/security/daily-limits'),
             ),
           ],
         ),

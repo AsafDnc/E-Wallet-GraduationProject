@@ -98,3 +98,49 @@ class NotificationsNotifier extends Notifier<bool> {
 final notificationsProvider = NotifierProvider<NotificationsNotifier, bool>(
   NotificationsNotifier.new,
 );
+
+// ─── Require PIN on App Launch ────────────────────────────────────────────────
+
+class RequirePinNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void set(bool value) => state = value;
+}
+
+final requirePinProvider = NotifierProvider<RequirePinNotifier, bool>(
+  RequirePinNotifier.new,
+);
+
+// ─── Daily Transaction Limits ─────────────────────────────────────────────────
+
+class DailyLimitsState {
+  const DailyLimitsState({this.isEnabled = false, this.limitAmount = 5000.0});
+
+  final bool isEnabled;
+  final double limitAmount;
+
+  DailyLimitsState copyWith({bool? isEnabled, double? limitAmount}) {
+    return DailyLimitsState(
+      isEnabled: isEnabled ?? this.isEnabled,
+      limitAmount: limitAmount ?? this.limitAmount,
+    );
+  }
+}
+
+class DailyLimitsNotifier extends Notifier<DailyLimitsState> {
+  @override
+  DailyLimitsState build() => const DailyLimitsState();
+
+  void setEnabled(bool value) => state = state.copyWith(isEnabled: value);
+
+  void setLimit(double amount) {
+    if (amount <= 0) return;
+    state = state.copyWith(limitAmount: amount);
+  }
+}
+
+final dailyLimitsProvider =
+    NotifierProvider<DailyLimitsNotifier, DailyLimitsState>(
+      DailyLimitsNotifier.new,
+    );
