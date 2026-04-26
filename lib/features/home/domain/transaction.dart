@@ -27,7 +27,7 @@ class Transaction {
   /// Whether this transaction is pinned to the top of the list.
   final bool isPinned;
 
-  /// When the transaction was recorded.
+  /// When the transaction was recorded (used for charts and monthly totals).
   final DateTime createdAt;
 
   Transaction copyWith({

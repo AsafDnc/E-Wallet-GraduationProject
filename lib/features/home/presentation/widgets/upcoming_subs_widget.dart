@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../subscriptions/domain/subscription_model.dart';
 import '../../../subscriptions/providers/subscriptions_provider.dart';
+import '../../../subscriptions/presentation/subscriptions_screen.dart';
 
 /// Horizontally scrollable list of upcoming subscription cards.
 ///
@@ -14,6 +15,15 @@ class UpcomingSubsWidget extends ConsumerWidget {
 
   final double horizontalPadding;
 
+  void _goToSubs(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            SubscriptionsScreen(onBackTap: () => Navigator.of(context).pop()),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subscriptions = ref.watch(subscriptionsProvider);
@@ -23,13 +33,30 @@ class UpcomingSubsWidget extends ConsumerWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: Text(
-            'Upcoming Subs',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Upcoming Subs',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _goToSubs(context),
+                child: Text(
+                  'See All',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 14),
@@ -41,8 +68,10 @@ class UpcomingSubsWidget extends ConsumerWidget {
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             itemCount: subscriptions.length,
             separatorBuilder: (context, i) => const SizedBox(width: 12),
-            itemBuilder: (context, index) =>
-                _SubscriptionCard(subscription: subscriptions[index]),
+            itemBuilder: (context, index) => GestureDetector(
+              onTap: () => _goToSubs(context),
+              child: _SubscriptionCard(subscription: subscriptions[index]),
+            ),
           ),
         ),
       ],

@@ -43,6 +43,18 @@ class TransactionsNotifier extends Notifier<List<Transaction>> {
         iconBgColor: const Color(0xFFE50914),
         createdAt: now.subtract(const Duration(days: 5)),
       ),
+      Transaction(
+        id: 'grocery',
+        title: 'Grocery',
+        amount: -87.20,
+        iconData: Icons.shopping_cart_rounded.codePoint,
+        iconBgColor: const Color(0xFF2E7D32),
+        createdAt: DateTime(
+          now.year,
+          now.month - 1 < 1 ? 12 : now.month - 1,
+          15,
+        ),
+      ),
     ];
   }
 

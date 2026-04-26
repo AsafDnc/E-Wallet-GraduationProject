@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../features/auth/providers/auth_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
 
 class SupportSection extends ConsumerWidget {
   const SupportSection({super.key});
