@@ -18,9 +18,9 @@ extension CurrencyFormatting on double {
     decimalDigits: 0,
   );
 
-  /// Full format with 2 decimal places: "₺ 10.500,75"
+  /// Full format with 2 decimal places — e.g. "₺ 10.500,75"
   String get formatted => _fullFormatter.format(this);
 
-  /// Compact format with no decimals: "₺ 10.500"
+  /// Compact format without decimals — e.g. "₺ 10.500"
   String get formattedCompact => _compactFormatter.format(this);
 }

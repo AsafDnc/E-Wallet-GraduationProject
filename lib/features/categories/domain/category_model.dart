@@ -42,9 +42,9 @@ class Category {
 }
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
-// Non-const because IconData.codePoint is not a compile-time constant.
+// Using factory to access IconData.codePoint at runtime (not compile-time const).
 
-final kSeedExpenseCategories = <Category>[
+List<Category> buildSeedExpenseCategories() => [
   Category(
     id: 'food',
     name: 'Food',
@@ -103,7 +103,7 @@ final kSeedExpenseCategories = <Category>[
   ),
 ];
 
-final kSeedIncomeCategories = <Category>[
+List<Category> buildSeedIncomeCategories() => [
   Category(
     id: 'salary',
     name: 'Salary',

@@ -54,14 +54,6 @@ bool _hasSupabaseSession() {
 const _kTransitionDuration = Duration(milliseconds: 380);
 const _kCurve = Curves.easeInOutCubic;
 
-/// Builds a [CustomTransitionPage] with a horizontal iOS-style push/pop:
-///
-///  • Incoming page: slides in from [Offset(1, 0)] → [Offset.zero]   (right → center)
-///  • Outgoing page: slides out to [Offset(-0.3, 0)]                 (center → left, subtle parallax)
-///
-/// The outgoing exit is driven by [secondaryAnimation], which GoRouter
-/// automatically runs forward when a new route is pushed on top and
-/// reverses when that route is popped — no manual status checks needed.
 CustomTransitionPage<void> _horizontalPushPage({
   required LocalKey pageKey,
   required Widget child,
@@ -72,13 +64,11 @@ CustomTransitionPage<void> _horizontalPushPage({
     transitionDuration: _kTransitionDuration,
     reverseTransitionDuration: _kTransitionDuration,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      // Incoming: slides in from right edge.
       final enterSlide = Tween<Offset>(
         begin: const Offset(1.0, 0.0),
         end: Offset.zero,
       ).animate(CurvedAnimation(parent: animation, curve: _kCurve));
 
-      // Outgoing: subtle parallax slide to the left (driven by secondaryAnimation).
       final exitSlide = Tween<Offset>(
         begin: Offset.zero,
         end: const Offset(-0.3, 0.0),

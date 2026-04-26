@@ -27,7 +27,7 @@ class Transaction {
   /// Whether this transaction is pinned to the top of the list.
   final bool isPinned;
 
-  /// When this transaction was created (used for chart grouping).
+  /// When the transaction was recorded (used for charts and monthly totals).
   final DateTime createdAt;
 
   Transaction copyWith({
@@ -50,9 +50,9 @@ class Transaction {
     );
   }
 
-  /// Formats amount as "-$5.99" or "+$5.99".
+  /// Formats amount as "-₺5,99" or "+₺5,99".
   String get formattedAmount {
     final sign = amount < 0 ? '-' : '+';
-    return '$sign\$${amount.abs().toStringAsFixed(2)}';
+    return '$sign₺${amount.abs().toStringAsFixed(2)}';
   }
 }

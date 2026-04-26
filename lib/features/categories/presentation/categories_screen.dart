@@ -20,6 +20,7 @@ class CategoriesScreen extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: cs.surface,
           elevation: 0,
+          surfaceTintColor: Colors.transparent,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
@@ -38,7 +39,7 @@ class CategoriesScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: CategoryType.values
-              .map((type) => _CategoryList(type: type))
+              .map((type) => _CategoryTabList(type: type))
               .toList(),
         ),
         floatingActionButton: FloatingActionButton.extended(
@@ -51,10 +52,10 @@ class CategoriesScreen extends ConsumerWidget {
   }
 }
 
-// ─── Category list per type ───────────────────────────────────────────────────
+// ─── Tab list ─────────────────────────────────────────────────────────────────
 
-class _CategoryList extends ConsumerWidget {
-  const _CategoryList({required this.type});
+class _CategoryTabList extends ConsumerWidget {
+  const _CategoryTabList({required this.type});
 
   final CategoryType type;
 
@@ -72,11 +73,15 @@ class _CategoryList extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.category_outlined, size: 48, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.category_outlined,
+              size: 52,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 12),
             Text(
               'No ${type.label.toLowerCase()} categories yet',
-              style: TextStyle(color: cs.onSurfaceVariant),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 15),
             ),
           ],
         ),
@@ -86,23 +91,22 @@ class _CategoryList extends ConsumerWidget {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final cat = categories[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: _CategoryTile(
-            category: cat,
-            onEdit: () => _showCategoryDialog(context, ref, existing: cat),
-            onDelete: () =>
-                ref.read(categoryProvider.notifier).deleteCategory(cat.id),
-          ),
-        );
-      },
+      itemBuilder: (context, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _CategoryTile(
+          category: categories[i],
+          onEdit: () =>
+              _showCategoryDialog(context, ref, existing: categories[i]),
+          onDelete: () => ref
+              .read(categoryProvider.notifier)
+              .deleteCategory(categories[i].id),
+        ),
+      ),
     );
   }
 }
 
-// ─── Single category tile with swipe-to-delete ────────────────────────────────
+// ─── Single tile ──────────────────────────────────────────────────────────────
 
 class _CategoryTile extends StatelessWidget {
   const _CategoryTile({
@@ -206,10 +210,10 @@ class _CategoryDialog extends StatefulWidget {
 class _CategoryDialogState extends State<_CategoryDialog> {
   late final TextEditingController _nameCtrl;
   late CategoryType _type;
-  late int _selectedIconCode;
-  late int _selectedColorValue;
+  late int _iconCode;
+  late int _colorValue;
 
-  static final _availableIcons = <IconData>[
+  static final _icons = <IconData>[
     Icons.restaurant_rounded,
     Icons.directions_car_rounded,
     Icons.shopping_bag_rounded,
@@ -234,7 +238,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     Icons.more_horiz_rounded,
   ];
 
-  static final _availableColors = <Color>[
+  static final _colors = <Color>[
     const Color(0xFFE57373),
     const Color(0xFF64B5F6),
     const Color(0xFF81C784),
@@ -254,10 +258,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
     _type = widget.existing?.type ?? CategoryType.expense;
-    _selectedIconCode =
-        widget.existing?.iconCode ?? _availableIcons.first.codePoint;
-    _selectedColorValue =
-        widget.existing?.colorValue ?? _availableColors.first.toARGB32();
+    _iconCode = widget.existing?.iconCode ?? _icons.first.codePoint;
+    _colorValue = widget.existing?.colorValue ?? _colors.first.toARGB32();
   }
 
   @override
@@ -272,60 +274,55 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
     final id =
         widget.existing?.id ?? 'cat_${DateTime.now().microsecondsSinceEpoch}';
-
-    final category = Category(
+    final cat = Category(
       id: id,
       name: name,
-      iconCode: _selectedIconCode,
-      colorValue: _selectedColorValue,
+      iconCode: _iconCode,
+      colorValue: _colorValue,
       type: _type,
     );
 
     if (widget.existing != null) {
-      widget.ref.read(categoryProvider.notifier).updateCategory(category);
+      widget.ref.read(categoryProvider.notifier).updateCategory(cat);
     } else {
-      widget.ref.read(categoryProvider.notifier).addCategory(category);
+      widget.ref.read(categoryProvider.notifier).addCategory(cat);
     }
-
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final selectedColor = Color(_selectedColorValue);
-    final selectedIcon = IconData(
-      _selectedIconCode,
-      fontFamily: 'MaterialIcons',
-    );
-    final isEditing = widget.existing != null;
+    final selColor = Color(_colorValue);
+    final selIcon = IconData(_iconCode, fontFamily: 'MaterialIcons');
+    final isEdit = widget.existing != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Category' : 'Add Category'),
+      title: Text(isEdit ? 'Edit Category' : 'Add Category'),
       contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Preview
+            // Preview chip
             Center(
               child: Container(
                 width: 64,
                 height: 64,
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: selectedColor.withValues(alpha: 0.15),
+                  color: selColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(selectedIcon, color: selectedColor, size: 30),
+                child: Icon(selIcon, color: selColor, size: 30),
               ),
             ),
-            const SizedBox(height: 20),
 
-            // Name
+            // Name field
             TextField(
               controller: _nameCtrl,
-              autofocus: !isEditing,
+              autofocus: !isEdit,
               decoration: InputDecoration(
                 labelText: 'Category Name',
                 border: OutlineInputBorder(
@@ -366,34 +363,34 @@ class _CategoryDialogState extends State<_CategoryDialog> {
             ),
             const SizedBox(height: 8),
             SizedBox(
-              height: 160,
+              height: 168,
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 6,
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                 ),
-                itemCount: _availableIcons.length,
-                itemBuilder: (context, i) {
-                  final icon = _availableIcons[i];
-                  final isSelected = icon.codePoint == _selectedIconCode;
+                itemCount: _icons.length,
+                itemBuilder: (_, i) {
+                  final icon = _icons[i];
+                  final selected = icon.codePoint == _iconCode;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedIconCode = icon.codePoint),
-                    child: Container(
+                    onTap: () => setState(() => _iconCode = icon.codePoint),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
                       decoration: BoxDecoration(
-                        color: isSelected
+                        color: selected
                             ? cs.primaryContainer
                             : cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(10),
-                        border: isSelected
+                        border: selected
                             ? Border.all(color: cs.primary, width: 2)
                             : null,
                       ),
                       child: Icon(
                         icon,
                         size: 20,
-                        color: isSelected
+                        color: selected
                             ? cs.onPrimaryContainer
                             : cs.onSurfaceVariant,
                       ),
@@ -415,22 +412,22 @@ class _CategoryDialogState extends State<_CategoryDialog> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _availableColors.map((c) {
-                final isSelected = c.toARGB32() == _selectedColorValue;
+              children: _colors.map((c) {
+                final selected = c.toARGB32() == _colorValue;
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => _selectedColorValue = c.toARGB32()),
-                  child: Container(
+                  onTap: () => setState(() => _colorValue = c.toARGB32()),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
                       color: c,
                       shape: BoxShape.circle,
-                      border: isSelected
+                      border: selected
                           ? Border.all(color: cs.onSurface, width: 2.5)
                           : null,
                     ),
-                    child: isSelected
+                    child: selected
                         ? const Icon(Icons.check, color: Colors.white, size: 16)
                         : null,
                   ),
@@ -446,7 +443,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _save, child: Text(isEditing ? 'Save' : 'Add')),
+        FilledButton(onPressed: _save, child: Text(isEdit ? 'Save' : 'Add')),
       ],
     );
   }

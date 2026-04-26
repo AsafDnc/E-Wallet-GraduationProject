@@ -93,9 +93,8 @@ class _BalanceRowState extends State<_BalanceRow> {
 
   String get _formattedBalance => widget.balance.formattedCompact;
 
-  /// Returns only the digit characters (used to size the masked asterisks).
-  String get _digitsOnly =>
-      widget.balance.toStringAsFixed(0).replaceAll('-', '');
+  /// Digit characters of the balance magnitude (sizes the masked asterisks).
+  String get _digitsOnly => widget.balance.abs().toStringAsFixed(0);
 
   @override
   Widget build(BuildContext context) {

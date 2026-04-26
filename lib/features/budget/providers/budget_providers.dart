@@ -14,13 +14,11 @@ class BudgetSettingsNotifier extends Notifier<BudgetSettings> {
     state = state.copyWith(monthlyLimit: limit);
   }
 
-  void setAlertEnabled(bool enabled) {
-    state = state.copyWith(isAlertEnabled: enabled);
-  }
+  void setAlertEnabled(bool enabled) =>
+      state = state.copyWith(isAlertEnabled: enabled);
 
-  void setThreshold(double threshold) {
-    state = state.copyWith(alertThreshold: threshold);
-  }
+  void setThreshold(double threshold) =>
+      state = state.copyWith(alertThreshold: threshold);
 }
 
 final budgetSettingsProvider =
@@ -28,13 +26,12 @@ final budgetSettingsProvider =
       BudgetSettingsNotifier.new,
     );
 
-// ─── Derived: current-month spending ─────────────────────────────────────────
+// ─── Derived: current-month expense total ─────────────────────────────────────
 
-/// Sum of all expense transactions in the current calendar month.
 final currentMonthSpendingProvider = Provider<double>((ref) {
-  final transactions = ref.watch(transactionsProvider);
+  final txns = ref.watch(transactionsProvider);
   final now = DateTime.now();
-  return transactions
+  return txns
       .where(
         (t) =>
             t.amount < 0 &&
@@ -53,7 +50,7 @@ final budgetProgressProvider = Provider<double>((ref) {
   return spent / settings.monthlyLimit;
 });
 
-// ─── Helper: should alert fire for a given new amount? ───────────────────────
+// ─── Helper: should alert fire given a potential new expense? ─────────────────
 
 final budgetAlertForAmountProvider = Provider.family<bool, double>((
   ref,
