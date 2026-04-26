@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../entry/presentation/add_entry_bottom_sheet.dart';
-import '../../goals/presentation/goals_screen.dart';
 import '../../home/presentation/home_screen.dart';
-import '../../subscriptions/presentation/subscriptions_screen.dart';
+import '../../subscriptions/presentation/subscriptions_goals_screen.dart';
+import '../../wallets/presentation/screens/my_wallets_screen.dart';
 import '../../../shared/widgets/floating_bottom_nav.dart';
 
 class AppShellScreen extends StatefulWidget {
@@ -15,10 +15,6 @@ class AppShellScreen extends StatefulWidget {
 
 class _AppShellScreenState extends State<AppShellScreen> {
   int _currentIndex = 0;
-
-  void _onBackToHome() {
-    setState(() => _currentIndex = 0);
-  }
 
   void _openTransactionSheet() {
     showModalBottomSheet<void>(
@@ -39,25 +35,27 @@ class _AppShellScreenState extends State<AppShellScreen> {
           IndexedStack(
             index: _currentIndex,
             children: [
+              // 0 — Home
               TickerMode(
                 enabled: _currentIndex == 0,
                 child: const HomeScreen(showBottomNav: false),
               ),
+              // 1 — Chart (reserved for future use)
               TickerMode(
                 enabled: _currentIndex == 1,
-                child: GoalsScreen(onBackTap: _onBackToHome),
+                child: const _ComingSoonScreen(),
               ),
-              TickerMode(
-                enabled: _currentIndex == 2,
-                child: const _ShellPlaceholder(),
-              ),
+              // 2 — Add (handled as modal; placeholder keeps IndexedStack stable)
+              const _ShellPlaceholder(),
+              // 3 — Subscriptions & Saving Goals (unified)
               TickerMode(
                 enabled: _currentIndex == 3,
-                child: SubscriptionsScreen(onBackTap: _onBackToHome),
+                child: const SubscriptionsGoalsScreen(),
               ),
+              // 4 — My Wallets
               TickerMode(
                 enabled: _currentIndex == 4,
-                child: const _ShellPlaceholder(),
+                child: const MyWalletsScreen(),
               ),
             ],
           ),
@@ -85,7 +83,32 @@ class _AppShellScreenState extends State<AppShellScreen> {
   }
 }
 
-/// Empty tab body for nav slots not yet implemented (Add, Wallet).
+// ─── Coming Soon placeholder (Chart tab) ─────────────────────────────────────
+
+class _ComingSoonScreen extends StatelessWidget {
+  const _ComingSoonScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: cs.surface,
+      body: Center(
+        child: Text(
+          'Coming Soon',
+          style: TextStyle(
+            color: cs.onSurfaceVariant,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Empty placeholder (keeps IndexedStack slot stable) ──────────────────────
+
 class _ShellPlaceholder extends StatelessWidget {
   const _ShellPlaceholder();
 

@@ -3,7 +3,18 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/constants/card_dimensions.dart';
 import '../../domain/goal_model.dart';
+
+// Clean, modern icon mapping per goal ID — matches app's category icon style.
+const Map<String, IconData> _goalIconData = {
+  'laptop': Icons.laptop_mac_rounded,
+  'car': Icons.directions_car_rounded,
+  'holiday': Icons.beach_access_rounded,
+  'winter_clothes': Icons.checkroom_rounded,
+};
+
+IconData _iconForGoal(String id) => _goalIconData[id] ?? Icons.savings_rounded;
 
 class GoalCardWidget extends StatelessWidget {
   const GoalCardWidget({
@@ -19,18 +30,15 @@ class GoalCardWidget extends StatelessWidget {
   final VoidCallback onUnpin;
   final VoidCallback onDelete;
 
-  static const double _radiusValue = 14;
-  static const _tileRadius = BorderRadius.all(Radius.circular(_radiusValue));
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    // Same fill tone as subscription “days left” ring (primary body text).
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final progressFill = cs.onSurface;
     final trackColor = cs.surfaceContainerHighest;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: kCardMargin,
       child: Slidable(
         key: ValueKey(goal.id),
         startActionPane: ActionPane(
@@ -39,7 +47,7 @@ class GoalCardWidget extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: _tileRadius,
+                borderRadius: kTileRadius,
                 child: SlidableAction(
                   onPressed: (_) => goal.isPinned ? onUnpin() : onPin(),
                   backgroundColor: AppTheme.pinSwipeBackground,
@@ -60,7 +68,7 @@ class GoalCardWidget extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: ClipRRect(
-                borderRadius: _tileRadius,
+                borderRadius: kTileRadius,
                 child: SlidableAction(
                   onPressed: (_) => onDelete(),
                   backgroundColor: Colors.redAccent,
@@ -74,19 +82,11 @@ class GoalCardWidget extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(_radiusValue),
+            borderRadius: BorderRadius.circular(kCardRadius),
             border: Border.all(color: cs.outlineVariant, width: 1),
-            boxShadow: Theme.of(context).brightness == Brightness.light
-                ? const [
-                    BoxShadow(
-                      color: Color(0x12222B33),
-                      blurRadius: 16,
-                      offset: Offset(0, 4),
-                    ),
-                  ]
-                : const [],
+            boxShadow: isLight ? kCardShadow : const [],
           ),
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          padding: kCardPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -94,21 +94,14 @@ class GoalCardWidget extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 17,
-                    backgroundColor: goal.iconBackground,
-                    child: Text(
-                      goal.emoji,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
+                  _GoalIcon(goal: goal),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       goal.title,
                       style: TextStyle(
                         color: cs.onSurface,
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         height: 1.2,
                       ),
@@ -126,8 +119,8 @@ class GoalCardWidget extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // ── Savings amounts (emphasised) + compact % ─────────────
+              const SizedBox(height: 10),
+              // ── Amounts + percentage ────────────────────────────────────
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -136,7 +129,7 @@ class GoalCardWidget extends StatelessWidget {
                       goal.savingsLabel,
                       style: TextStyle(
                         color: cs.onSurface,
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         height: 1.2,
                         letterSpacing: 0.1,
@@ -155,7 +148,7 @@ class GoalCardWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              // ── Progress bar (fill matches subscription ring) ───────
+              // ── Progress bar ────────────────────────────────────────────
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
@@ -169,6 +162,25 @@ class GoalCardWidget extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Square-rounded icon — identical size and shape to subscription service icons.
+class _GoalIcon extends StatelessWidget {
+  const _GoalIcon({required this.goal});
+  final GoalModel goal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: goal.iconBackground,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(_iconForGoal(goal.id), color: Colors.white, size: 26),
     );
   }
 }
