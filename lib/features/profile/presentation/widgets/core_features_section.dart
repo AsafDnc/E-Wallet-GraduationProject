@@ -61,7 +61,7 @@ class CoreFeaturesSection extends StatelessWidget {
                   Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                 ],
               ),
-              onTap: () => context.push('/wallet'),
+              onTap: () => context.push('/wallets'),
             ),
             _InternalDivider(),
             ListTile(
@@ -72,7 +72,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () => _soon(context),
+              onTap: () => context.push('/budget'),
             ),
             _InternalDivider(),
             ListTile(
@@ -83,7 +83,7 @@ class CoreFeaturesSection extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              onTap: () => _soon(context),
+              onTap: () => context.push('/categories'),
             ),
             _InternalDivider(),
             ListTile(

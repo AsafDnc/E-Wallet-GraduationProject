@@ -8,6 +8,8 @@ class TransactionsNotifier extends Notifier<List<Transaction>> {
   @override
   List<Transaction> build() => List<Transaction>.from(_seed);
 
+  static final _now = DateTime.now();
+
   static final List<Transaction> _seed = [
     Transaction(
       id: 'starbucks',
@@ -15,6 +17,7 @@ class TransactionsNotifier extends Notifier<List<Transaction>> {
       amount: -5.99,
       iconData: Icons.local_cafe_rounded.codePoint,
       iconBgColor: const Color(0xFF00704A),
+      createdAt: _now.subtract(const Duration(days: 1)),
     ),
     Transaction(
       id: 'gas_station',
@@ -22,6 +25,35 @@ class TransactionsNotifier extends Notifier<List<Transaction>> {
       amount: -35.79,
       iconData: Icons.local_gas_station_rounded.codePoint,
       iconBgColor: const Color(0xFF3A3A3C),
+      createdAt: _now.subtract(const Duration(days: 2)),
+    ),
+    Transaction(
+      id: 'salary',
+      title: 'Salary',
+      amount: 3500.00,
+      iconData: Icons.account_balance_wallet_rounded.codePoint,
+      iconBgColor: const Color(0xFF27AE60),
+      createdAt: DateTime(_now.year, _now.month, 1),
+    ),
+    Transaction(
+      id: 'netflix',
+      title: 'Netflix',
+      amount: -15.99,
+      iconData: Icons.tv_rounded.codePoint,
+      iconBgColor: const Color(0xFFE50914),
+      createdAt: _now.subtract(const Duration(days: 5)),
+    ),
+    Transaction(
+      id: 'grocery',
+      title: 'Grocery',
+      amount: -87.20,
+      iconData: Icons.shopping_cart_rounded.codePoint,
+      iconBgColor: const Color(0xFF2E7D32),
+      createdAt: DateTime(
+        _now.year,
+        _now.month - 1 < 1 ? 12 : _now.month - 1,
+        15,
+      ),
     ),
   ];
 

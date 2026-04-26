@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/utils/currency_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../providers/home_provider.dart';
 
@@ -23,7 +26,20 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
   static const _lineColor = Color(0xFF00C5A0);
   static const _gradientTop = Color(0x6000C5A0);
   static const _gradientBottom = Color(0x0000C5A0);
-  static const _monthLabels = ['Jan', 'Feb', 'March', 'Apr', 'May', 'Jun'];
+  static const _monthLabels = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
 
   // Tracks the currently touched spot index for the smooth indicator.
   int? _touchedIndex;
@@ -62,7 +78,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
 
   @override
   Widget build(BuildContext context) {
-    final data = ref.watch(homeProvider.select((s) => s.spendingFlowData));
+    final data = ref.watch(spendingChartDataProvider);
 
     final cs = Theme.of(context).colorScheme;
 
@@ -84,19 +100,29 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
           RepaintBoundary(
             child: SizedBox(
               height: 180,
-              child: FadeTransition(
-                opacity: const AlwaysStoppedAnimation(1.0),
-                child: LineChart(
-                  _buildChartData(
-                    data,
-                    cs.outlineVariant,
-                    cs.onSurfaceVariant,
-                    cs.surfaceContainerHighest,
-                  ),
-                  duration: const Duration(milliseconds: 80),
-                  curve: Curves.easeOutCubic,
-                ),
-              ),
+              child: data.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No spending data yet',
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : FadeTransition(
+                      opacity: const AlwaysStoppedAnimation(1.0),
+                      child: LineChart(
+                        _buildChartData(
+                          data,
+                          cs.outlineVariant,
+                          cs.onSurfaceVariant,
+                          cs.surfaceContainerHighest,
+                        ),
+                        duration: const Duration(milliseconds: 80),
+                        curve: Curves.easeOutCubic,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -110,9 +136,24 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
     Color labelColor,
     Color tooltipBgColor,
   ) {
+    assert(data.isNotEmpty);
     final spots = data
         .map((entry) => FlSpot(entry.$1.toDouble(), entry.$2))
         .toList();
+
+    final xs = spots.map((s) => s.x).toList();
+    final ys = spots.map((s) => s.y).toList();
+
+    double minX = xs.reduce(math.min);
+    double maxX = xs.reduce(math.max);
+    // fl_chart can misbehave / crash when minX == maxX (division by zero in layout).
+    if (maxX <= minX) {
+      maxX = minX + 1;
+    }
+
+    double maxY = ys.reduce(math.max).toDouble();
+    maxY = math.max(maxY * 1.25, 100).toDouble();
+    final horizontalInterval = math.max(maxY / 5.0, 50.0).toDouble();
 
     final labelStyle = TextStyle(color: labelColor, fontSize: 11);
 
@@ -121,7 +162,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        horizontalInterval: 200,
+        horizontalInterval: horizontalInterval,
         getDrawingHorizontalLine: (_) =>
             FlLine(color: gridColor, strokeWidth: 1),
       ),
@@ -150,17 +191,17 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            interval: 200,
+            interval: horizontalInterval,
             reservedSize: 38,
             getTitlesWidget: (value, meta) =>
-                Text(value.toInt().toString(), style: labelStyle),
+                Text(value.formattedCompact, style: labelStyle),
           ),
         ),
       ),
-      minX: 0,
-      maxX: 5,
+      minX: minX,
+      maxX: maxX,
       minY: 0,
-      maxY: 900,
+      maxY: maxY,
       // ── Touch configuration ──────────────────────────────────────────────
       lineTouchData: LineTouchData(
         enabled: true,
@@ -209,7 +250,7 @@ class _SpendingChartWidgetState extends ConsumerState<SpendingChartWidget>
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
               return LineTooltipItem(
-                '\$${spot.y.toStringAsFixed(0)}',
+                spot.y.formattedCompact,
                 const TextStyle(
                   color: _lineColor,
                   fontWeight: FontWeight.w600,

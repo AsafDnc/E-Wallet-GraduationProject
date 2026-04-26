@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/utils/currency_formatter.dart';
+import '../../../../features/wallets/presentation/providers/wallet_providers.dart';
 import '../../providers/home_provider.dart';
 
 /// Displays the top section of the Home screen:
@@ -13,10 +15,10 @@ class HomeHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final walletBalance = ref.watch(calculatedBalanceProvider);
     final header = ref.watch(
       homeProvider.select(
-        (s) =>
-            (s.userName, s.balance, s.balanceChangePercent, s.isBalanceVisible),
+        (s) => (s.userName, s.balanceChangePercent, s.isBalanceVisible),
       ),
     );
 
@@ -30,9 +32,9 @@ class HomeHeaderWidget extends ConsumerWidget {
               _GreetingText(userName: header.$1),
               const SizedBox(height: 6),
               _BalanceRow(
-                balance: header.$2,
-                changePercent: header.$3,
-                isVisible: header.$4,
+                balance: walletBalance,
+                changePercent: header.$2,
+                isVisible: header.$3,
                 onToggleVisibility: () =>
                     ref.read(homeProvider.notifier).toggleBalanceVisibility(),
               ),
@@ -89,18 +91,11 @@ class _BalanceRowState extends State<_BalanceRow> {
   String? _cachedWidthKey;
   double? _cachedVisibleWidth;
 
-  String get _formattedBalance {
-    final parts = widget.balance.toStringAsFixed(0).split('');
-    final buffer = StringBuffer('\$');
-    for (int i = 0; i < parts.length; i++) {
-      if (i > 0 && (parts.length - i) % 3 == 0) buffer.write(',');
-      buffer.write(parts[i]);
-    }
-    return buffer.toString();
-  }
+  String get _formattedBalance => widget.balance.formattedCompact;
 
-  /// Returns the digits-only portion of the balance (no $ or commas).
-  String get _digitsOnly => widget.balance.toStringAsFixed(0);
+  /// Returns only the digit characters (used to size the masked asterisks).
+  String get _digitsOnly =>
+      widget.balance.toStringAsFixed(0).replaceAll('-', '');
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +130,7 @@ class _BalanceRowState extends State<_BalanceRow> {
               ),
               // Visible layer: real balance or masked.
               Text(
-                widget.isVisible ? formatted : '\$${'*' * _digitsOnly.length}',
+                widget.isVisible ? formatted : '₺ ${'*' * _digitsOnly.length}',
                 style: themedBalanceStyle,
                 maxLines: 1,
                 overflow: TextOverflow.clip,

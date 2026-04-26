@@ -1,0 +1,355 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/utils/currency_formatter.dart';
+import '../providers/budget_providers.dart';
+
+class BudgetScreen extends ConsumerStatefulWidget {
+  const BudgetScreen({super.key});
+
+  @override
+  ConsumerState<BudgetScreen> createState() => _BudgetScreenState();
+}
+
+class _BudgetScreenState extends ConsumerState<BudgetScreen> {
+  late final TextEditingController _limitCtrl;
+  bool _isEditingLimit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = ref.read(budgetSettingsProvider);
+    _limitCtrl = TextEditingController(
+      text: settings.monthlyLimit.toStringAsFixed(0),
+    );
+  }
+
+  @override
+  void dispose() {
+    _limitCtrl.dispose();
+    super.dispose();
+  }
+
+  void _applyLimit() {
+    final parsed = double.tryParse(_limitCtrl.text.replaceAll(',', '.'));
+    if (parsed != null && parsed > 0) {
+      ref.read(budgetSettingsProvider.notifier).setLimit(parsed);
+    }
+    setState(() => _isEditingLimit = false);
+    FocusScope.of(context).unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final settings = ref.watch(budgetSettingsProvider);
+    final spent = ref.watch(currentMonthSpendingProvider);
+    final progress = ref.watch(budgetProgressProvider).clamp(0.0, 1.0);
+
+    final progressColor = switch (progress) {
+      >= 1.0 => cs.error,
+      >= 0.9 => const Color(0xFFFF7043),
+      >= 0.75 => const Color(0xFFFFB300),
+      _ => cs.primary,
+    };
+
+    return Scaffold(
+      backgroundColor: cs.surface,
+      appBar: AppBar(
+        backgroundColor: cs.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text(
+          'Monthly Budget',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          // ── Limit Input Card ──────────────────────────────────────────
+          _SectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Monthly Limit',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    if (!_isEditingLimit)
+                      TextButton.icon(
+                        onPressed: () => setState(() => _isEditingLimit = true),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Edit'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: cs.primary,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_isEditingLimit) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _limitCtrl,
+                          autofocus: true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[\d,.]'),
+                            ),
+                          ],
+                          decoration: InputDecoration(
+                            prefixText: '₺ ',
+                            labelText: 'Monthly Limit',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onSubmitted: (_) => _applyLimit(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      FilledButton(
+                        onPressed: _applyLimit,
+                        child: const Text('Apply'),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Text(
+                    settings.monthlyLimit.formattedCompact,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  Text(
+                    'per month',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Progress Card ─────────────────────────────────────────────
+          _SectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Spending Progress',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Progress bar
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: progress),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: value,
+                        minHeight: 14,
+                        backgroundColor: cs.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progressColor,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // Labels
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${spent.formattedCompact} spent',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: progressColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'of ${settings.monthlyLimit.formattedCompact}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 4),
+
+                // Remaining
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: progress >= 1.0
+                      ? Row(
+                          key: const ValueKey('over'),
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              size: 16,
+                              color: cs.error,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Over budget by ${(spent - settings.monthlyLimit).formatted}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: cs.error,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          key: const ValueKey('remaining'),
+                          '${(settings.monthlyLimit - spent).formattedCompact} remaining',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Alert Settings Card ───────────────────────────────────────
+          _SectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Alert Settings',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Budget Alerts'),
+                  subtitle: Text(
+                    'Warn when adding a transaction that exceeds the threshold',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                  value: settings.isAlertEnabled,
+                  onChanged: (val) => ref
+                      .read(budgetSettingsProvider.notifier)
+                      .setAlertEnabled(val),
+                  activeThumbColor: cs.primary,
+                ),
+
+                AnimatedOpacity(
+                  opacity: settings.isAlertEnabled ? 1.0 : 0.38,
+                  duration: const Duration(milliseconds: 200),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Divider(color: cs.outlineVariant, height: 1),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Alert Threshold',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SegmentedButton<double>(
+                        segments: const [
+                          ButtonSegment<double>(value: 0.5, label: Text('50%')),
+                          ButtonSegment<double>(
+                            value: 0.75,
+                            label: Text('75%'),
+                          ),
+                          ButtonSegment<double>(value: 0.9, label: Text('90%')),
+                          ButtonSegment<double>(
+                            value: 1.0,
+                            label: Text('100%'),
+                          ),
+                        ],
+                        selected: {settings.alertThreshold},
+                        onSelectionChanged: settings.isAlertEnabled
+                            ? (s) => ref
+                                  .read(budgetSettingsProvider.notifier)
+                                  .setThreshold(s.first)
+                            : null,
+                        style: ButtonStyle(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Alert fires when spending + new transaction ≥ '
+                        '${(settings.alertThreshold * 100).toInt()}% of limit',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Shared card wrapper ──────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: child,
+    );
+  }
+}

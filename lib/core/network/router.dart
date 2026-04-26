@@ -9,18 +9,28 @@ import 'supabase_init.dart';
 
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
+import '../../features/budget/presentation/budget_screen.dart';
+import '../../features/categories/presentation/categories_screen.dart';
 import '../../features/navigation/presentation/app_shell_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/subscriptions/presentation/subscriptions_screen.dart';
 import '../../features/wallet/presentation/wallet_screen.dart';
+import '../../features/wallets/presentation/screens/my_wallets_screen.dart';
 
 /// A [ChangeNotifier] that fires whenever the Supabase auth state changes,
 /// which causes GoRouter to re-evaluate its [redirect] callback.
 class _AuthStateRefreshNotifier extends ChangeNotifier {
   _AuthStateRefreshNotifier() {
     if (!supabasePluginReady) return;
-    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-      notifyListeners();
-    });
+    try {
+      _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+        _,
+      ) {
+        notifyListeners();
+      });
+    } catch (_) {
+      _subscription = null;
+    }
   }
 
   StreamSubscription<AuthState>? _subscription;
@@ -126,6 +136,36 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _horizontalPushPage(
           pageKey: state.pageKey,
           child: const ProfileScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/wallets',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const MyWalletsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/subscriptions',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: Builder(
+            builder: (ctx) => SubscriptionsScreen(onBackTap: () => ctx.pop()),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/budget',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const BudgetScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/categories',
+        pageBuilder: (context, state) => _horizontalPushPage(
+          pageKey: state.pageKey,
+          child: const CategoriesScreen(),
         ),
       ),
       GoRoute(
