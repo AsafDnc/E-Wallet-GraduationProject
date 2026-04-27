@@ -1,47 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../wallets/presentation/providers/wallet_providers.dart';
 import 'transactions_provider.dart';
 
 // ---------------------------------------------------------------------------
-// Home state
+// Home state (greeting + non–wallet-derived UI only)
 // ---------------------------------------------------------------------------
 
-/// Encapsulates all data displayed on the Home screen.
+/// Home-specific UI state. **Total balance** comes from [calculatedBalanceProvider]
+/// (sum of [walletsProvider]); keep this model free of a duplicate balance field.
 class HomeState {
-  const HomeState({
-    required this.userName,
-    required this.balance,
-    required this.balanceChangePercent,
-    required this.isBalanceVisible,
-    required this.spendingFlowData,
-  });
+  const HomeState({required this.userName});
 
   final String userName;
-  final double balance;
 
-  /// Percentage change displayed next to the balance badge (e.g. 5.2).
-  final double balanceChangePercent;
-
-  /// Toggles visibility of the balance amount.
-  final bool isBalanceVisible;
-
-  /// Ordered list of (month-index, amount) pairs for the chart.
-  final List<(int, double)> spendingFlowData;
-
-  HomeState copyWith({
-    String? userName,
-    double? balance,
-    double? balanceChangePercent,
-    bool? isBalanceVisible,
-    List<(int, double)>? spendingFlowData,
-  }) {
-    return HomeState(
-      userName: userName ?? this.userName,
-      balance: balance ?? this.balance,
-      balanceChangePercent: balanceChangePercent ?? this.balanceChangePercent,
-      isBalanceVisible: isBalanceVisible ?? this.isBalanceVisible,
-      spendingFlowData: spendingFlowData ?? this.spendingFlowData,
-    );
+  HomeState copyWith({String? userName}) {
+    return HomeState(userName: userName ?? this.userName);
   }
 }
 
@@ -51,43 +25,40 @@ class HomeState {
 
 class HomeNotifier extends Notifier<HomeState> {
   @override
-  HomeState build() => _mockState();
-
-  /// Toggles the balance visibility (eye icon tap).
-  void toggleBalanceVisibility() {
-    state = state.copyWith(isBalanceVisible: !state.isBalanceVisible);
-  }
-
-  /// Applies a signed delta to the wallet balance (expense negative, income positive).
-  void adjustBalance(double delta) {
-    state = state.copyWith(balance: state.balance + delta);
-  }
-
-  // Stub: replace with real Supabase fetch in the data layer.
-  HomeState _mockState() {
-    return const HomeState(
-      userName: 'User',
-      balance: 4723,
-      balanceChangePercent: 5.2,
-      isBalanceVisible: true,
-      spendingFlowData: [
-        (0, 200),
-        (1, 350),
-        (2, 420),
-        (3, 310),
-        (4, 500),
-        (5, 680),
-      ],
-    );
-  }
+  HomeState build() => const HomeState(userName: 'User');
 }
 
 // ---------------------------------------------------------------------------
 // Providers
 // ---------------------------------------------------------------------------
 
-final homeProvider = NotifierProvider<HomeNotifier, HomeState>(() {
-  return HomeNotifier();
+final homeProvider = NotifierProvider<HomeNotifier, HomeState>(
+  HomeNotifier.new,
+);
+
+/// Net worth / total cash: sum of all [walletsProvider] rows (same as My Wallets).
+///
+/// Consumed by the home header so the top balance always matches **My Wallets**
+/// and any updates from the add-entry flow or wallet edits.
+// calculatedBalanceProvider lives in wallet_providers.dart
+
+/// Approximate “vs total balance” percent for the home badge, derived from
+/// **this calendar month’s** net cashflow in [transactionsProvider] so it moves
+/// with Recent Transactions.
+final homeNetChangePercentProvider = Provider<double>((ref) {
+  final now = DateTime.now();
+  final txs = ref.watch(transactionsProvider);
+  var monthNet = 0.0;
+  for (final t in txs) {
+    if (t.createdAt.year == now.year && t.createdAt.month == now.month) {
+      monthNet += t.amount;
+    }
+  }
+  final total = ref.watch(calculatedBalanceProvider);
+  if (total.abs() < 0.01) {
+    return 0.0;
+  }
+  return (monthNet / total.abs() * 100).clamp(-999.0, 999.0);
 });
 
 /// Derives monthly expense totals from [transactionsProvider].

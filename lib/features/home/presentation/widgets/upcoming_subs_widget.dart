@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../navigation/providers/shell_home_navigation_intent_provider.dart';
 import '../../../subscriptions/domain/subscription_model.dart';
 import '../../../subscriptions/providers/subscriptions_provider.dart';
-import '../../../subscriptions/presentation/subscriptions_screen.dart';
 
 /// Horizontally scrollable list of upcoming subscription cards.
 ///
@@ -15,13 +15,10 @@ class UpcomingSubsWidget extends ConsumerWidget {
 
   final double horizontalPadding;
 
-  void _goToSubs(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            SubscriptionsScreen(onBackTap: () => Navigator.of(context).pop()),
-      ),
-    );
+  void _openUnifiedSubscriptionsFromHome(WidgetRef ref) {
+    ref
+        .read(shellHomeNavigationIntentProvider.notifier)
+        .openUnifiedSubscriptionsFromHome();
   }
 
   @override
@@ -33,30 +30,37 @@ class UpcomingSubsWidget extends ConsumerWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Upcoming Subs',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openUnifiedSubscriptionsFromHome(ref),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Upcoming Subs',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'See All',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              GestureDetector(
-                onTap: () => _goToSubs(context),
-                child: Text(
-                  'See All',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -64,14 +68,19 @@ class UpcomingSubsWidget extends ConsumerWidget {
           height: 132,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            // First card starts at the same inset as the title.
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             itemCount: subscriptions.length,
             separatorBuilder: (context, i) => const SizedBox(width: 12),
-            itemBuilder: (context, index) => GestureDetector(
-              onTap: () => _goToSubs(context),
-              child: _SubscriptionCard(subscription: subscriptions[index]),
-            ),
+            itemBuilder: (context, index) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _openUnifiedSubscriptionsFromHome(ref),
+                  borderRadius: BorderRadius.circular(16),
+                  child: _SubscriptionCard(subscription: subscriptions[index]),
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -115,7 +124,7 @@ class _SubscriptionCard extends StatelessWidget {
             subscription.shortNameUppercase,
             style: TextStyle(
               color: cs.onSurface,
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.3,
             ),
@@ -124,7 +133,11 @@ class _SubscriptionCard extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             subscription.homePriceLine,
-            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -164,7 +177,6 @@ class _RenewalBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    // Distinct mini-surface so the reminder sits apart from the card body.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

@@ -10,7 +10,8 @@ final _mockWallets = <WalletEntry>[
     id: 'w1',
     name: 'Main Bank Account',
     type: WalletType.bank,
-    balance: 5000,
+    // Net worth (w1+w2+w3) matches legacy home mock total ₺4,723.
+    balance: 5673,
     color: const Color(0xFF1D75DD).toARGB32(),
     iconCode: Icons.account_balance_rounded.codePoint,
     isDefault: true,

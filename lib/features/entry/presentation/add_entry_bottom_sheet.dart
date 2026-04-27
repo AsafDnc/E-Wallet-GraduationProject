@@ -6,7 +6,6 @@ import '../../budget/providers/budget_providers.dart';
 import '../../categories/domain/category_model.dart';
 import '../../categories/providers/category_provider.dart';
 import '../../home/domain/transaction.dart';
-import '../../home/providers/home_provider.dart';
 import '../../home/providers/transactions_provider.dart';
 import '../../wallets/domain/models/wallet_entry_model.dart';
 import '../../wallets/presentation/providers/wallet_providers.dart';
@@ -289,9 +288,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         ref
             .read(walletsProvider.notifier)
             .adjustBalance(_selectedWalletId!, wallet.balance + signed);
-      } else {
-        // Fallback: update homeProvider balance directly.
-        ref.read(homeProvider.notifier).adjustBalance(signed);
+      } else if (wallets.isNotEmpty) {
+        // Keep totals in sync with the home header: apply to default wallet.
+        final def = wallets.firstWhere(
+          (w) => w.isDefault,
+          orElse: () => wallets.first,
+        );
+        ref
+            .read(walletsProvider.notifier)
+            .adjustBalance(def.id, def.balance + signed);
       }
     }
 

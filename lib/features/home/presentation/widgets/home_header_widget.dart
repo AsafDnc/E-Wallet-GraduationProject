@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/utils/currency_formatter.dart';
+import '../../../wallets/presentation/providers/wallet_providers.dart';
 import '../../providers/home_provider.dart';
 
 /// Displays the top section of the Home screen:
@@ -14,12 +15,10 @@ class HomeHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final header = ref.watch(
-      homeProvider.select(
-        (s) =>
-            (s.userName, s.balance, s.balanceChangePercent, s.isBalanceVisible),
-      ),
-    );
+    final userName = ref.watch(homeProvider.select((s) => s.userName));
+    final balance = ref.watch(calculatedBalanceProvider);
+    final changePercent = ref.watch(homeNetChangePercentProvider);
+    final isVisible = ref.watch(balanceVisibilityProvider);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,14 +27,14 @@ class HomeHeaderWidget extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _GreetingText(userName: header.$1),
+              _GreetingText(userName: userName),
               const SizedBox(height: 6),
               _BalanceRow(
-                balance: header.$2,
-                changePercent: header.$3,
-                isVisible: header.$4,
+                balance: balance,
+                changePercent: changePercent,
+                isVisible: isVisible,
                 onToggleVisibility: () =>
-                    ref.read(homeProvider.notifier).toggleBalanceVisibility(),
+                    ref.read(balanceVisibilityProvider.notifier).toggle(),
               ),
             ],
           ),
@@ -178,16 +177,17 @@ class _PercentBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final positive = percent >= 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF39D353),
+        color: positive ? const Color(0xFF39D353) : const Color(0xFFE53935),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        '+%${percent.toStringAsFixed(1)}',
-        style: const TextStyle(
-          color: Colors.black,
+        '${positive ? '+' : ''}${percent.toStringAsFixed(1)}%',
+        style: TextStyle(
+          color: positive ? Colors.black : Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),

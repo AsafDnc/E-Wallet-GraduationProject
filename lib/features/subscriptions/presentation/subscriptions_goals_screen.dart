@@ -2,31 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-import '../../goals/domain/goal_model.dart';
 import '../../goals/presentation/widgets/goal_card_widget.dart';
 import '../../goals/providers/goals_provider.dart';
+import '../domain/subscriptions_goals_tab.dart';
 import '../providers/subscriptions_provider.dart';
 import 'widgets/subscription_card_widget.dart';
+import 'widgets/subscriptions_goals_add_sheets.dart';
 
-// ─── Tab enum ─────────────────────────────────────────────────────────────────
-
-enum ScreenTab { subscriptions, goals }
-
-extension _ScreenTabX on ScreenTab {
+extension _SubscriptionsGoalsTabX on SubscriptionsGoalsTab {
   String get label {
     switch (this) {
-      case ScreenTab.subscriptions:
+      case SubscriptionsGoalsTab.subscriptions:
         return 'Subscriptions';
-      case ScreenTab.goals:
+      case SubscriptionsGoalsTab.goals:
         return 'Saving Goals';
     }
   }
 
   String get sectionTitle {
     switch (this) {
-      case ScreenTab.subscriptions:
+      case SubscriptionsGoalsTab.subscriptions:
         return 'Total Monthly Cost';
-      case ScreenTab.goals:
+      case SubscriptionsGoalsTab.goals:
         return 'Saving Goals Cost';
     }
   }
@@ -35,7 +32,12 @@ extension _ScreenTabX on ScreenTab {
 // ─── Root screen ──────────────────────────────────────────────────────────────
 
 class SubscriptionsGoalsScreen extends ConsumerStatefulWidget {
-  const SubscriptionsGoalsScreen({super.key});
+  const SubscriptionsGoalsScreen({
+    super.key,
+    this.initialTab = SubscriptionsGoalsTab.subscriptions,
+  });
+
+  final SubscriptionsGoalsTab initialTab;
 
   @override
   ConsumerState<SubscriptionsGoalsScreen> createState() =>
@@ -44,9 +46,23 @@ class SubscriptionsGoalsScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionsGoalsScreenState
     extends ConsumerState<SubscriptionsGoalsScreen> {
-  ScreenTab _tab = ScreenTab.subscriptions;
+  late SubscriptionsGoalsTab _tab;
 
-  void _switchTab(ScreenTab tab) {
+  @override
+  void initState() {
+    super.initState();
+    _tab = widget.initialTab;
+  }
+
+  @override
+  void didUpdateWidget(SubscriptionsGoalsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab) {
+      setState(() => _tab = widget.initialTab);
+    }
+  }
+
+  void _switchTab(SubscriptionsGoalsTab tab) {
     if (tab == _tab) return;
     setState(() => _tab = tab);
   }
@@ -62,7 +78,7 @@ class _SubscriptionsGoalsScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             _buildAmountSection(),
             const SizedBox(height: 18),
             Expanded(child: _buildBody()),
@@ -72,23 +88,23 @@ class _SubscriptionsGoalsScreenState
     );
   }
 
-  // ─── Header: centered segment control, no "+" button ──────────────────────
-
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-      child: _SlidingSegmentControl(tab: _tab, onChanged: _switchTab),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 300),
+          child: _SlidingSegmentControl(tab: _tab, onChanged: _switchTab),
+        ),
+      ),
     );
   }
-
-  // ─── Amount section: title label + animated large amount ──────────────────
 
   Widget _buildAmountSection() {
     final cs = Theme.of(context).colorScheme;
 
     return Column(
       children: [
-        // Dynamic section title
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           transitionBuilder: (child, anim) => FadeTransition(
@@ -99,15 +115,15 @@ class _SubscriptionsGoalsScreenState
             _tab.sectionTitle,
             key: ValueKey(_tab.sectionTitle),
             style: TextStyle(
-              color: cs.onSurfaceVariant,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
+              color: cs.onSurface,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.15,
+              height: 1.25,
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        // Fixed-height container keeps position static; only value fades
+        const SizedBox(height: 12),
         SizedBox(
           height: 48,
           child: AnimatedSwitcher(
@@ -116,7 +132,7 @@ class _SubscriptionsGoalsScreenState
               opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
               child: child,
             ),
-            child: _tab == ScreenTab.subscriptions
+            child: _tab == SubscriptionsGoalsTab.subscriptions
                 ? _SubsTotal(key: const ValueKey('sub_total'))
                 : _GoalsTotal(key: const ValueKey('goal_total')),
           ),
@@ -125,8 +141,6 @@ class _SubscriptionsGoalsScreenState
     );
   }
 
-  // ─── Body: animated list switcher ─────────────────────────────────────────
-
   Widget _buildBody() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 280),
@@ -134,9 +148,15 @@ class _SubscriptionsGoalsScreenState
         opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
         child: child,
       ),
-      child: _tab == ScreenTab.subscriptions
-          ? const _SubscriptionsList(key: ValueKey('subs'))
-          : const _GoalsList(key: ValueKey('goals')),
+      child: _tab == SubscriptionsGoalsTab.subscriptions
+          ? _SubscriptionsList(
+              key: const ValueKey('subs'),
+              onAddTap: () => showAddSubscriptionSheet(context),
+            )
+          : _GoalsList(
+              key: const ValueKey('goals'),
+              onAddTap: () => showAddSavingGoalSheet(context),
+            ),
     );
   }
 }
@@ -146,15 +166,15 @@ class _SubscriptionsGoalsScreenState
 class _SlidingSegmentControl extends StatelessWidget {
   const _SlidingSegmentControl({required this.tab, required this.onChanged});
 
-  final ScreenTab tab;
-  final void Function(ScreenTab) onChanged;
+  final SubscriptionsGoalsTab tab;
+  final void Function(SubscriptionsGoalsTab) onChanged;
 
   static const _pillColor = Color(0xFF1E2330);
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tabs = ScreenTab.values;
+    final tabs = SubscriptionsGoalsTab.values;
 
     return Container(
       height: 46,
@@ -170,7 +190,6 @@ class _SlidingSegmentControl extends StatelessWidget {
           return Stack(
             fit: StackFit.expand,
             children: [
-              // ── Animated sliding pill ─────────────────────────────────
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
@@ -192,7 +211,6 @@ class _SlidingSegmentControl extends StatelessWidget {
                   ),
                 ),
               ),
-              // ── Labels ────────────────────────────────────────────────
               Row(
                 children: tabs
                     .map(
@@ -243,9 +261,47 @@ class _SegTab extends StatelessWidget {
             fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
             color: selected ? selectedColor : unselectedColor,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 15,
+            fontSize: 16,
           ),
-          child: Text(label),
+          child: Text(label, textAlign: TextAlign.center),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Soft “+” footer button ───────────────────────────────────────────────────
+
+class _ListSoftAddButton extends StatelessWidget {
+  const _ListSoftAddButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final borderColor = Theme.of(context).brightness == Brightness.light
+        ? Colors.grey.shade300
+        : cs.outlineVariant;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 18, 0, 120),
+      child: Center(
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(56, 56),
+            maximumSize: const Size(56, 56),
+            padding: EdgeInsets.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            backgroundColor: cs.onSurface.withValues(alpha: 0.04),
+            foregroundColor: cs.onSurface.withValues(alpha: 0.55),
+            side: BorderSide(color: borderColor, width: 1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+          child: const Icon(Icons.add_rounded, size: 28),
         ),
       ),
     );
@@ -332,7 +388,9 @@ class _GoalsTotal extends ConsumerWidget {
 // ─── Subscriptions list ───────────────────────────────────────────────────────
 
 class _SubscriptionsList extends ConsumerWidget {
-  const _SubscriptionsList({super.key});
+  const _SubscriptionsList({super.key, required this.onAddTap});
+
+  final VoidCallback onAddTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -342,9 +400,12 @@ class _SubscriptionsList extends ConsumerWidget {
 
     return SlidableAutoCloseBehavior(
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 120),
-        itemCount: items.length,
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+        itemCount: items.length + 1,
         itemBuilder: (_, index) {
+          if (index == items.length) {
+            return _ListSoftAddButton(onPressed: onAddTap);
+          }
           final sub = items[index];
           return SubscriptionCardWidget(
             subscription: sub,
@@ -360,115 +421,30 @@ class _SubscriptionsList extends ConsumerWidget {
 
 // ─── Goals list ───────────────────────────────────────────────────────────────
 
-class _GoalsList extends ConsumerStatefulWidget {
-  const _GoalsList({super.key});
+class _GoalsList extends ConsumerWidget {
+  const _GoalsList({super.key, required this.onAddTap});
+
+  final VoidCallback onAddTap;
 
   @override
-  ConsumerState<_GoalsList> createState() => _GoalsListState();
-}
-
-class _GoalsListState extends ConsumerState<_GoalsList> {
-  final _listKey = GlobalKey<AnimatedListState>();
-
-  void _onPin(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final fromIdx = before.indexWhere((g) => g.id == id);
-    if (fromIdx < 0) return;
-    if (fromIdx == 0) {
-      notifier.pinGoal(id);
-      return;
-    }
-    _listKey.currentState?.removeItem(
-      fromIdx,
-      (context, animation) => _tile(before[fromIdx], animation),
-      duration: const Duration(milliseconds: 280),
-    );
-    notifier.pinGoal(id);
-    Future.delayed(const Duration(milliseconds: 60), () {
-      if (!mounted) return;
-      _listKey.currentState?.insertItem(
-        0,
-        duration: const Duration(milliseconds: 400),
-      );
-    });
-  }
-
-  void _onUnpin(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final fromIdx = before.indexWhere((g) => g.id == id);
-    if (fromIdx < 0) return;
-    _listKey.currentState?.removeItem(
-      fromIdx,
-      (context, animation) => _tile(before[fromIdx], animation),
-      duration: const Duration(milliseconds: 280),
-    );
-    notifier.unpinGoal(id);
-    Future.delayed(const Duration(milliseconds: 60), () {
-      if (!mounted) return;
-      final next = ref.read(goalsProvider).goals;
-      final newIdx = next.indexWhere((g) => g.id == id);
-      if (newIdx >= 0) {
-        _listKey.currentState?.insertItem(
-          newIdx,
-          duration: const Duration(milliseconds: 400),
-        );
-      }
-    });
-  }
-
-  void _onDelete(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final idx = before.indexWhere((g) => g.id == id);
-    if (idx < 0) return;
-    _listKey.currentState?.removeItem(
-      idx,
-      (context, animation) => _tile(before[idx], animation),
-      duration: const Duration(milliseconds: 300),
-    );
-    notifier.deleteGoal(id);
-  }
-
-  Widget _tile(GoalModel goal, Animation<double> animation) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: GoalCardWidget(
-          goal: goal,
-          onPin: () {},
-          onUnpin: () {},
-          onDelete: () {},
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final goals = ref.watch(goalsProvider.select((s) => s.goals));
 
     return SlidableAutoCloseBehavior(
-      child: AnimatedList(
-        key: _listKey,
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 120),
-        initialItemCount: goals.length,
-        itemBuilder: (context, index, animation) {
-          if (index >= goals.length) return const SizedBox.shrink();
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+        itemCount: goals.length + 1,
+        itemBuilder: (_, index) {
+          if (index == goals.length) {
+            return _ListSoftAddButton(onPressed: onAddTap);
+          }
           final goal = goals[index];
-          return SizeTransition(
-            sizeFactor: animation,
-            child: FadeTransition(
-              opacity: animation,
-              child: GoalCardWidget(
-                goal: goal,
-                onPin: () => _onPin(goal.id),
-                onUnpin: () => _onUnpin(goal.id),
-                onDelete: () => _onDelete(goal.id),
-              ),
-            ),
+          return GoalCardWidget(
+            goal: goal,
+            onPin: () => ref.read(goalsProvider.notifier).pinGoal(goal.id),
+            onUnpin: () => ref.read(goalsProvider.notifier).unpinGoal(goal.id),
+            onDelete: () =>
+                ref.read(goalsProvider.notifier).deleteGoal(goal.id),
           );
         },
       ),
