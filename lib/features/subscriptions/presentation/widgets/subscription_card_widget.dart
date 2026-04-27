@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
+import '../../../../shared/constants/card_dimensions.dart';
 import '../../domain/subscription_model.dart';
 
-/// Full-width subscription row with swipe-to-delete only.
+/// Full-width subscription row with swipe-to-delete.
 class SubscriptionCardWidget extends StatelessWidget {
   const SubscriptionCardWidget({
     super.key,
@@ -14,16 +15,13 @@ class SubscriptionCardWidget extends StatelessWidget {
   final SubscriptionModel subscription;
   final VoidCallback onDelete;
 
-  static const double _radius = 18;
-  static const _tileRadius = BorderRadius.all(Radius.circular(_radius));
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: kCardMargin,
       child: Slidable(
         key: ValueKey(subscription.id),
         endActionPane: ActionPane(
@@ -33,7 +31,7 @@ class SubscriptionCardWidget extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: ClipRRect(
-                borderRadius: _tileRadius,
+                borderRadius: kTileRadius,
                 child: SlidableAction(
                   onPressed: (_) => onDelete(),
                   backgroundColor: Colors.redAccent,
@@ -48,38 +46,19 @@ class SubscriptionCardWidget extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(_radius),
+            borderRadius: BorderRadius.circular(kCardRadius),
             border: Border.all(color: cs.outlineVariant),
-            boxShadow: isLight
-                ? const [
-                    BoxShadow(
-                      color: Color(0x12222B33),
-                      blurRadius: 18,
-                      offset: Offset(0, 4),
-                    ),
-                  ]
-                : const [],
+            boxShadow: isLight ? kCardShadow : const [],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: kCardPadding,
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: subscription.iconBgColor,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Icon(
-                  IconData(subscription.iconData, fontFamily: 'MaterialIcons'),
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
+              _ServiceIcon(subscription: subscription),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       subscription.displayName,
@@ -89,7 +68,7 @@ class SubscriptionCardWidget extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 5),
                     Text.rich(
                       TextSpan(
                         children: [
@@ -97,8 +76,8 @@ class SubscriptionCardWidget extends StatelessWidget {
                             text: subscription.priceDollarsText,
                             style: TextStyle(
                               color: cs.onSurface,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           TextSpan(
@@ -125,19 +104,37 @@ class SubscriptionCardWidget extends StatelessWidget {
   }
 }
 
-class _BillingRing extends StatelessWidget {
-  const _BillingRing({required this.subscription});
-
+class _ServiceIcon extends StatelessWidget {
+  const _ServiceIcon({required this.subscription});
   final SubscriptionModel subscription;
 
   @override
   Widget build(BuildContext context) {
-    const size = 66.0;
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: subscription.iconBgColor,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(
+        IconData(subscription.iconData, fontFamily: 'MaterialIcons'),
+        color: Colors.white,
+        size: 26,
+      ),
+    );
+  }
+}
+
+class _BillingRing extends StatelessWidget {
+  const _BillingRing({required this.subscription});
+  final SubscriptionModel subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 62.0;
     final progress = subscription.billingProgress.clamp(0.0, 1.0);
     final cs = Theme.of(context).colorScheme;
-    final ringBg = cs.surfaceContainerHighest;
-    // Match primary body text (dark charcoal in light mode), not brand blue.
-    final ringFg = cs.onSurface;
 
     return SizedBox(
       width: size,
@@ -150,12 +147,10 @@ class _BillingRing extends StatelessWidget {
             height: size,
             child: CircularProgressIndicator(
               value: progress,
-              // Slightly thicker, premium feel.
-              strokeWidth: 6,
-              // Rounded ends for a softer, modern look.
+              strokeWidth: 5.5,
               strokeCap: StrokeCap.round,
-              backgroundColor: ringBg,
-              valueColor: AlwaysStoppedAnimation<Color>(ringFg),
+              backgroundColor: cs.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(cs.onSurface),
             ),
           ),
           Column(
@@ -165,7 +160,7 @@ class _BillingRing extends StatelessWidget {
                 '${subscription.daysUntilRenewal}',
                 style: TextStyle(
                   color: cs.onSurface,
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   height: 1,
                 ),
