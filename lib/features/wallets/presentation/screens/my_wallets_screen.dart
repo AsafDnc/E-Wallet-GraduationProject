@@ -28,15 +28,21 @@ class MyWalletsScreen extends ConsumerWidget {
             surfaceTintColor: Colors.transparent,
             pinned: true,
             centerTitle: false,
+            automaticallyImplyLeading: false,
+            leading: context.canPop()
+                ? IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: cs.onSurface,
+                    ),
+                    onPressed: () => context.pop(),
+                  )
+                : null,
             title: Text(
               'My Wallets',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onSurface),
-              onPressed: () => context.pop(),
             ),
           ),
 

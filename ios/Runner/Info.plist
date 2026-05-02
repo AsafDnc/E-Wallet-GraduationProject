@@ -49,3 +49,9 @@
 	</array>
 </dict>
 </plist>
+<key>NSLocalNetworkUsageDescription</key>
+	<string>Allow Flutter tools to debug the app on your device.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+	</array>

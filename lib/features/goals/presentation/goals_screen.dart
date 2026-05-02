@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/goal_model.dart';
 import '../providers/goals_provider.dart';
+import '../../subscriptions/presentation/widgets/subscriptions_goals_add_sheets.dart';
 import 'widgets/goal_card_widget.dart';
 
 class GoalsScreen extends ConsumerStatefulWidget {
@@ -15,115 +16,34 @@ class GoalsScreen extends ConsumerStatefulWidget {
 }
 
 class _GoalsScreenState extends ConsumerState<GoalsScreen> {
-  final _listKey = GlobalKey<AnimatedListState>();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
 
-  void _onPin(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final fromIdx = before.indexWhere((goal) => goal.id == id);
-    if (fromIdx < 0) return;
-
-    // Top item can still become pinned; no re-order animation needed.
-    if (fromIdx == 0) {
-      notifier.pinGoal(id);
-      return;
+  Future<void> _load() async {
+    try {
+      await ref.read(goalsProvider.notifier).loadGoals();
+    } catch (_) {
+      if (!mounted) return;
     }
-
-    _listKey.currentState?.removeItem(
-      fromIdx,
-      (context, animation) => SizeTransition(
-        sizeFactor: animation,
-        child: FadeTransition(
-          opacity: animation,
-          child: GoalCardWidget(
-            goal: before[fromIdx],
-            onPin: () {},
-            onUnpin: () {},
-            onDelete: () {},
-          ),
-        ),
-      ),
-      duration: const Duration(milliseconds: 280),
-    );
-
-    notifier.pinGoal(id);
-
-    Future.delayed(const Duration(milliseconds: 60), () {
-      if (!mounted) return;
-      _listKey.currentState?.insertItem(
-        0,
-        duration: const Duration(milliseconds: 400),
-      );
-    });
   }
 
-  void _onUnpin(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final fromIdx = before.indexWhere((goal) => goal.id == id);
-    if (fromIdx < 0) return;
-
-    _listKey.currentState?.removeItem(
-      fromIdx,
-      (context, animation) => SizeTransition(
-        sizeFactor: animation,
-        child: FadeTransition(
-          opacity: animation,
-          child: GoalCardWidget(
-            goal: before[fromIdx],
-            onPin: () {},
-            onUnpin: () {},
-            onDelete: () {},
-          ),
-        ),
-      ),
-      duration: const Duration(milliseconds: 280),
-    );
-
-    notifier.unpinGoal(id);
-
-    Future.delayed(const Duration(milliseconds: 60), () {
+  Future<void> _onDelete(String id) async {
+    try {
+      await ref.read(goalsProvider.notifier).deleteGoal(id);
+      HapticFeedback.heavyImpact();
+    } catch (_) {
       if (!mounted) return;
-      final next = ref.read(goalsProvider).goals;
-      final newIdx = next.indexWhere((goal) => goal.id == id);
-      if (newIdx >= 0) {
-        _listKey.currentState?.insertItem(
-          newIdx,
-          duration: const Duration(milliseconds: 400),
-        );
-      }
-    });
-  }
-
-  void _onDelete(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final idx = before.indexWhere((goal) => goal.id == id);
-    if (idx < 0) return;
-
-    _listKey.currentState?.removeItem(
-      idx,
-      (context, animation) => SizeTransition(
-        sizeFactor: animation,
-        child: FadeTransition(
-          opacity: animation,
-          child: GoalCardWidget(
-            goal: before[idx],
-            onPin: () {},
-            onUnpin: () {},
-            onDelete: () {},
-          ),
-        ),
-      ),
-      duration: const Duration(milliseconds: 300),
-    );
-
-    notifier.deleteGoal(id);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final goals = ref.watch(goalsProvider.select((s) => s.goals));
+    final savedTotal = goals.fold<int>(0, (s, g) => s + g.savedAmount);
+    final targetTotal = goals.fold<int>(0, (s, g) => s + g.targetAmount);
 
     final cs = Theme.of(context).colorScheme;
 
@@ -134,7 +54,6 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 130),
           child: Column(
             children: [
-              // ── Shared header layout (mirrors SubscriptionsScreen) ───────
               Row(
                 children: [
                   IconButton(
@@ -155,25 +74,28 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: cs.surfaceContainerHighest,
+                  Material(
+                    color: cs.surfaceContainerHighest,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => showAddSavingGoalSheet(context),
+                      child: const SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: Icon(Icons.add, size: 22),
+                      ),
                     ),
-                    child: Icon(Icons.add, color: cs.onSurface, size: 22),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              // ── Totals row: centered, compact (saved vs target) ───────────
               Center(
                 child: Text.rich(
                   TextSpan(
                     children: [
                       TextSpan(
-                        text: '\$12,155 ',
+                        text: '\$${_fmt(savedTotal)} ',
                         style: TextStyle(
                           color: cs.onSurface,
                           fontSize: 30,
@@ -183,7 +105,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                       ),
                       TextSpan(
-                        text: '/ \$57,250',
+                        text: '/ \$${_fmt(targetTotal)}',
                         style: TextStyle(
                           color: cs.onSurfaceVariant,
                           fontSize: 15,
@@ -197,25 +119,20 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              AnimatedList(
-                key: _listKey,
+              ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                initialItemCount: goals.length,
-                itemBuilder: (context, index, animation) {
-                  if (index >= goals.length) return const SizedBox.shrink();
+                padding: EdgeInsets.zero,
+                itemCount: goals.length,
+                itemBuilder: (context, index) {
                   final goal = goals[index];
-                  return SizeTransition(
-                    sizeFactor: animation,
-                    child: FadeTransition(
-                      opacity: animation,
-                      child: GoalCardWidget(
-                        goal: goal,
-                        onPin: () => _onPin(goal.id),
-                        onUnpin: () => _onUnpin(goal.id),
-                        onDelete: () => _onDelete(goal.id),
-                      ),
-                    ),
+                  return GoalCardWidget(
+                    goal: goal,
+                    onPin: () =>
+                        ref.read(goalsProvider.notifier).pinGoal(goal.id),
+                    onUnpin: () =>
+                        ref.read(goalsProvider.notifier).unpinGoal(goal.id),
+                    onDelete: () => _onDelete(goal.id),
                   );
                 },
               ),
@@ -224,5 +141,15 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         ),
       ),
     );
+  }
+
+  static String _fmt(int v) {
+    final raw = v.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < raw.length; i++) {
+      if (i > 0 && (raw.length - i) % 3 == 0) buf.write(',');
+      buf.write(raw[i]);
+    }
+    return buf.toString();
   }
 }

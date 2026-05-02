@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/currency_formatter.dart';
@@ -6,7 +7,6 @@ import '../../budget/providers/budget_providers.dart';
 import '../../categories/domain/category_model.dart';
 import '../../categories/providers/category_provider.dart';
 import '../../home/domain/transaction.dart';
-import '../../home/providers/home_provider.dart';
 import '../../home/providers/transactions_provider.dart';
 import '../../wallets/domain/models/wallet_entry_model.dart';
 import '../../wallets/presentation/providers/wallet_providers.dart';
@@ -64,9 +64,25 @@ String _formatDate(DateTime d) {
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
 /// Full-height transaction entry sheet.
+///
 /// Opened directly by tapping the center (+) button in the bottom nav.
+/// Pass [initialTransfer] to jump straight to the Transfer segment.
+/// Pass [initialFromWalletId] to pre-select the "From" wallet.
+/// Pass [initialWalletId] to pre-select the main wallet (Income / Expense).
 class AddTransactionSheet extends ConsumerStatefulWidget {
-  const AddTransactionSheet({super.key});
+  const AddTransactionSheet({
+    super.key,
+    this.initialTransfer = false,
+    this.initialFromWalletId,
+    this.initialWalletId,
+  });
+
+  final bool initialTransfer;
+  final String? initialFromWalletId;
+
+  /// When not in transfer mode, pre-selects this wallet if it exists in
+  /// [walletsProvider]. Ignored when [initialTransfer] is true.
+  final String? initialWalletId;
 
   @override
   ConsumerState<AddTransactionSheet> createState() =>
@@ -85,23 +101,34 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   @override
   void initState() {
     super.initState();
-    // Pre-select the default wallet and first expense category.
+    if (widget.initialTransfer) _mode = _EntryMode.transfer;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final wallets = ref.read(walletsProvider);
       final categories = ref.read(categoryProvider);
       if (!mounted) return;
       setState(() {
-        if (wallets.isNotEmpty) {
-          final def = wallets.firstWhere(
-            (w) => w.isDefault,
-            orElse: () => wallets.first,
-          );
-          _selectedWalletId = def.id;
+        if (wallets.isEmpty) {
+          _selectedWalletId = null;
+        } else {
+          final String defaultWalletId = wallets
+              .firstWhere((w) => w.isDefault, orElse: () => wallets.first)
+              .id;
+
+          if (widget.initialTransfer) {
+            _selectedWalletId = widget.initialFromWalletId ?? defaultWalletId;
+          } else if (widget.initialWalletId != null &&
+              wallets.any((w) => w.id == widget.initialWalletId)) {
+            _selectedWalletId = widget.initialWalletId;
+          } else {
+            _selectedWalletId = defaultWalletId;
+          }
         }
-        final expenseCats = categories
-            .where((c) => c.type == CategoryType.expense)
-            .toList();
-        if (expenseCats.isNotEmpty) _category = expenseCats.first;
+        if (!widget.initialTransfer) {
+          final expenseCats = categories
+              .where((c) => c.type == CategoryType.expense)
+              .toList();
+          if (expenseCats.isNotEmpty) _category = expenseCats.first;
+        }
       });
     });
   }
@@ -119,6 +146,23 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         : all.where((c) => c.type == CategoryType.expense).toList();
   }
 
+  String? _effectivePrimaryWalletId(List<WalletEntry> wallets) {
+    if (wallets.isEmpty) return null;
+    if (_selectedWalletId != null &&
+        wallets.any((w) => w.id == _selectedWalletId)) {
+      return _selectedWalletId;
+    }
+    return wallets
+        .firstWhere((w) => w.isDefault, orElse: () => wallets.first)
+        .id;
+  }
+
+  String? _resolvedDestinationWalletId(List<WalletEntry> wallets) {
+    final id = _selectedToWalletId;
+    if (id == null || !wallets.any((w) => w.id == id)) return null;
+    return id;
+  }
+
   double? get _parsedAmount {
     if (_buffer.isEmpty || _buffer == '.') return null;
     return double.tryParse(_buffer);
@@ -133,12 +177,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   bool get _canSave {
     final v = _parsedAmount;
     if (v == null || v <= 0) return false;
+    final wallets = ref.read(walletsProvider);
     if (_mode == _EntryMode.transfer) {
       return _selectedWalletId != null &&
           _selectedToWalletId != null &&
           _selectedWalletId != _selectedToWalletId;
     }
-    return true;
+    if (wallets.isEmpty) return false;
+    return _effectivePrimaryWalletId(wallets) != null;
   }
 
   String get _buttonLabel =>
@@ -232,66 +278,95 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     final amount = _parsedAmount;
     if (amount == null || amount <= 0) return;
 
     final wallets = ref.read(walletsProvider);
 
     if (_mode == _EntryMode.transfer) {
-      // Deduct from source wallet.
-      if (_selectedWalletId != null) {
-        final src = wallets.firstWhere(
-          (w) => w.id == _selectedWalletId,
-          orElse: () => wallets.first,
-        );
-        ref
-            .read(walletsProvider.notifier)
-            .adjustBalance(_selectedWalletId!, src.balance - amount);
-      }
-      // Add to destination wallet.
-      if (_selectedToWalletId != null) {
-        final dst = wallets.firstWhere(
-          (w) => w.id == _selectedToWalletId,
-          orElse: () => wallets.first,
-        );
-        ref
-            .read(walletsProvider.notifier)
-            .adjustBalance(_selectedToWalletId!, dst.balance + amount);
+      if (_selectedWalletId != null && _selectedToWalletId != null) {
+        final fromId = _effectivePrimaryWalletId(wallets);
+        final toId = _resolvedDestinationWalletId(wallets);
+        if (fromId == null || toId == null || fromId == toId) return;
+
+        final dstName = wallets
+            .firstWhere((w) => w.id == toId, orElse: () => wallets.first)
+            .name;
+        HapticFeedback.mediumImpact();
+        try {
+          await ref
+              .read(transactionsProvider.notifier)
+              .recordNewTransaction(
+                Transaction(
+                  id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
+                  title: 'Transfer to $dstName',
+                  amount: -amount,
+                  iconData: Icons.swap_horiz_rounded.codePoint,
+                  iconBgColor: Theme.of(context).colorScheme.primary,
+                  createdAt: _date,
+                  walletId: fromId,
+                  transferToWalletId: toId,
+                ),
+              );
+        } catch (e, st) {
+          assert(() {
+            debugPrint('AddTransactionSheet: transfer save failed: $e\n$st');
+            return true;
+          }());
+          return;
+        }
+      } else {
+        if (_selectedWalletId != null) {
+          final src = wallets.firstWhere(
+            (w) => w.id == _selectedWalletId,
+            orElse: () => wallets.first,
+          );
+          ref
+              .read(walletsProvider.notifier)
+              .adjustBalance(_selectedWalletId!, src.balance - amount);
+        }
+        if (_selectedToWalletId != null) {
+          final dst = wallets.firstWhere(
+            (w) => w.id == _selectedToWalletId,
+            orElse: () => wallets.first,
+          );
+          ref
+              .read(walletsProvider.notifier)
+              .adjustBalance(_selectedToWalletId!, dst.balance + amount);
+        }
       }
     } else {
+      final walletId = _effectivePrimaryWalletId(wallets);
+      if (walletId == null) return;
+
       final signed = _mode == _EntryMode.expense ? -amount : amount;
 
-      // Add transaction to the recent list.
-      ref
-          .read(transactionsProvider.notifier)
-          .addAtTop(
-            Transaction(
-              id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
-              title: _noteCtrl.text.trim().isNotEmpty
-                  ? _noteCtrl.text.trim()
-                  : (_category?.name ?? 'Transaction'),
-              amount: signed,
-              iconData:
-                  _category?.displayIcon.codePoint ??
-                  Icons.payment_rounded.codePoint,
-              iconBgColor: _category?.displayColor ?? const Color(0xFF78909C),
-              createdAt: _date,
-            ),
-          );
-
-      // Update the selected wallet balance.
-      if (_selectedWalletId != null && wallets.isNotEmpty) {
-        final wallet = wallets.firstWhere(
-          (w) => w.id == _selectedWalletId,
-          orElse: () => wallets.first,
-        );
-        ref
-            .read(walletsProvider.notifier)
-            .adjustBalance(_selectedWalletId!, wallet.balance + signed);
-      } else {
-        // Fallback: update homeProvider balance directly.
-        ref.read(homeProvider.notifier).adjustBalance(signed);
+      HapticFeedback.mediumImpact();
+      try {
+        await ref
+            .read(transactionsProvider.notifier)
+            .recordNewTransaction(
+              Transaction(
+                id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
+                title: _noteCtrl.text.trim().isNotEmpty
+                    ? _noteCtrl.text.trim()
+                    : (_category?.name ?? 'Transaction'),
+                amount: signed,
+                iconData:
+                    _category?.displayIcon.codePoint ??
+                    Icons.payment_rounded.codePoint,
+                iconBgColor: _category?.displayColor ?? const Color(0xFF78909C),
+                createdAt: _date,
+                walletId: walletId,
+              ),
+            );
+      } catch (e, st) {
+        assert(() {
+          debugPrint('AddTransactionSheet: transaction save failed: $e\n$st');
+          return true;
+        }());
+        return;
       }
     }
 
@@ -514,7 +589,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             SizedBox(
               height: 56,
               child: FilledButton(
-                onPressed: _canSave ? _save : null,
+                onPressed: _canSave ? () => _save() : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: modeColor,
                   foregroundColor: Colors.white,
