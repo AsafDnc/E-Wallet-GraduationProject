@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'transactions_provider.dart';
+import '../../wallets/domain/models/wallet_entry_model.dart';
+import '../../wallets/presentation/providers/wallet_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Home state
@@ -51,26 +52,25 @@ class HomeState {
 
 class HomeNotifier extends Notifier<HomeState> {
   @override
-  HomeState build() => _mockState();
+  HomeState build() {
+    final initialSum = ref
+        .read(walletsProvider)
+        .fold<double>(0, (double s, WalletEntry w) => s + w.balance);
 
-  /// Toggles the balance visibility (eye icon tap).
-  void toggleBalanceVisibility() {
-    state = state.copyWith(isBalanceVisible: !state.isBalanceVisible);
-  }
+    ref.listen<List<WalletEntry>>(walletsProvider, (previous, next) {
+      final nextSum = next.fold<double>(
+        0,
+        (double s, WalletEntry w) => s + w.balance,
+      );
+      state = state.copyWith(balance: nextSum);
+    });
 
-  /// Applies a signed delta to the wallet balance (expense negative, income positive).
-  void adjustBalance(double delta) {
-    state = state.copyWith(balance: state.balance + delta);
-  }
-
-  // Stub: replace with real Supabase fetch in the data layer.
-  HomeState _mockState() {
-    return const HomeState(
+    return HomeState(
       userName: 'User',
-      balance: 4723,
+      balance: initialSum,
       balanceChangePercent: 5.2,
       isBalanceVisible: true,
-      spendingFlowData: [
+      spendingFlowData: const [
         (0, 200),
         (1, 350),
         (2, 420),
@@ -80,6 +80,16 @@ class HomeNotifier extends Notifier<HomeState> {
       ],
     );
   }
+
+  /// Toggles the balance visibility (eye icon tap).
+  void toggleBalanceVisibility() {
+    state = state.copyWith(isBalanceVisible: !state.isBalanceVisible);
+  }
+
+  /// Applies a signed delta when a transaction has no linked wallet (legacy).
+  void adjustBalance(double delta) {
+    state = state.copyWith(balance: state.balance + delta);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -88,29 +98,4 @@ class HomeNotifier extends Notifier<HomeState> {
 
 final homeProvider = NotifierProvider<HomeNotifier, HomeState>(() {
   return HomeNotifier();
-});
-
-/// Derives monthly expense totals from [transactionsProvider].
-///
-/// Seeds with 6 months of historical mock data and overlays real transactions.
-/// The result is a sorted list of (monthIndex 0–11, totalAmount) tuples
-/// consumed directly by [SpendingChartWidget].
-final spendingChartDataProvider = Provider<List<(int, double)>>((ref) {
-  final transactions = ref.watch(transactionsProvider);
-
-  // Historical mock baseline (month 0–5 = Jan–Jun).
-  final monthly = <int, double>{0: 200, 1: 350, 2: 420, 3: 310, 4: 500, 5: 680};
-
-  // Overlay real expense transactions grouped by month.
-  for (final tx in transactions) {
-    if (tx.amount < 0) {
-      final idx = tx.createdAt.month - 1;
-      monthly[idx] = (monthly[idx] ?? 0) + tx.amount.abs();
-    }
-  }
-
-  final sorted = monthly.entries.toList()
-    ..sort((a, b) => a.key.compareTo(b.key));
-
-  return sorted.map((e) => (e.key, e.value)).toList();
 });

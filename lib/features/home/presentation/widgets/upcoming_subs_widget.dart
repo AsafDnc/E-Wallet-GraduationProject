@@ -2,61 +2,84 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../navigation/providers/shell_home_navigation_intent_provider.dart';
 import '../../../subscriptions/domain/subscription_model.dart';
 import '../../../subscriptions/providers/subscriptions_provider.dart';
-import '../../../subscriptions/presentation/subscriptions_screen.dart';
 
 /// Horizontally scrollable list of upcoming subscription cards.
 ///
 /// [horizontalPadding] is applied to the section title so it aligns with the
 /// rest of the page, while the card list itself scrolls edge-to-edge.
-class UpcomingSubsWidget extends ConsumerWidget {
+class UpcomingSubsWidget extends ConsumerStatefulWidget {
   const UpcomingSubsWidget({super.key, this.horizontalPadding = 16});
 
   final double horizontalPadding;
 
-  void _goToSubs(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            SubscriptionsScreen(onBackTap: () => Navigator.of(context).pop()),
-      ),
-    );
+  @override
+  ConsumerState<UpcomingSubsWidget> createState() => _UpcomingSubsWidgetState();
+}
+
+class _UpcomingSubsWidgetState extends ConsumerState<UpcomingSubsWidget> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    try {
+      await ref.read(subscriptionsProvider.notifier).loadSubscriptions();
+    } catch (_) {
+      if (!mounted) return;
+    }
+  }
+
+  void _openUnifiedSubscriptions() {
+    ref
+        .read(shellHomeNavigationIntentProvider.notifier)
+        .openUnifiedSubscriptionsFromHome();
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final subscriptions = ref.watch(subscriptionsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Upcoming Subs',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+          padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _openUnifiedSubscriptions,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Upcoming Subs',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'See All',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              GestureDetector(
-                onTap: () => _goToSubs(context),
-                child: Text(
-                  'See All',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -64,14 +87,19 @@ class UpcomingSubsWidget extends ConsumerWidget {
           height: 132,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            // First card starts at the same inset as the title.
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
             itemCount: subscriptions.length,
             separatorBuilder: (context, i) => const SizedBox(width: 12),
-            itemBuilder: (context, index) => GestureDetector(
-              onTap: () => _goToSubs(context),
-              child: _SubscriptionCard(subscription: subscriptions[index]),
-            ),
+            itemBuilder: (context, index) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _openUnifiedSubscriptions,
+                  borderRadius: BorderRadius.circular(16),
+                  child: _SubscriptionCard(subscription: subscriptions[index]),
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -164,7 +192,6 @@ class _RenewalBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    // Distinct mini-surface so the reminder sits apart from the card body.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

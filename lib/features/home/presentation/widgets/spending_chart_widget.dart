@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/utils/currency_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../providers/home_provider.dart';
+import '../../providers/spending_chart_provider.dart';
 
 /// Displays the "Spending Flow" card containing an fl_chart [LineChart].
 ///

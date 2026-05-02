@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -89,6 +90,8 @@ class _RecentTransactionsWidgetState
     final before = List<Transaction>.from(ref.read(transactionsProvider));
     final idx = before.indexWhere((t) => t.id == id);
     if (idx < 0) return;
+
+    HapticFeedback.heavyImpact();
 
     _listKey.currentState?.removeItem(
       idx,

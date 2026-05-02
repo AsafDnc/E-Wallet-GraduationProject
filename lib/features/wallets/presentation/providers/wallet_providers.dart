@@ -64,6 +64,19 @@ class WalletsNotifier extends Notifier<List<WalletEntry>> {
         if (w.id == id) w.copyWith(balance: newBalance) else w,
     ];
   }
+
+  /// Adds [signedDelta] to the wallet's current balance (no-op if id missing).
+  void applyBalanceDelta(String walletId, double signedDelta) {
+    if (signedDelta == 0) return;
+    if (!state.any((WalletEntry w) => w.id == walletId)) return;
+    state = [
+      for (final w in state)
+        if (w.id == walletId)
+          w.copyWith(balance: w.balance + signedDelta)
+        else
+          w,
+    ];
+  }
 }
 
 final walletsProvider = NotifierProvider<WalletsNotifier, List<WalletEntry>>(

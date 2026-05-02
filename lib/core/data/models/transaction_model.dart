@@ -2,6 +2,7 @@
 /// `description`, `created_at`.
 ///
 /// The `type` column accepts only `'income'` or `'expense'` (see [WalletTransactionType]).
+/// The Dart field [TransactionModel.walletId] maps to the SQL column `wallet_id`.
 enum WalletTransactionType {
   income,
   expense;

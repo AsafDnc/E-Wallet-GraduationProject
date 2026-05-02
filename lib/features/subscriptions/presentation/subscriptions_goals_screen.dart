@@ -5,6 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../goals/domain/goal_model.dart';
 import '../../goals/presentation/widgets/goal_card_widget.dart';
 import '../../goals/providers/goals_provider.dart';
+import '../domain/subscriptions_goals_tab.dart';
 import '../providers/subscriptions_provider.dart';
 import 'widgets/subscription_card_widget.dart';
 
@@ -35,7 +36,12 @@ extension _ScreenTabX on ScreenTab {
 // ─── Root screen ──────────────────────────────────────────────────────────────
 
 class SubscriptionsGoalsScreen extends ConsumerStatefulWidget {
-  const SubscriptionsGoalsScreen({super.key});
+  const SubscriptionsGoalsScreen({
+    super.key,
+    this.initialTab = SubscriptionsGoalsTab.subscriptions,
+  });
+
+  final SubscriptionsGoalsTab initialTab;
 
   @override
   ConsumerState<SubscriptionsGoalsScreen> createState() =>
@@ -44,7 +50,30 @@ class SubscriptionsGoalsScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionsGoalsScreenState
     extends ConsumerState<SubscriptionsGoalsScreen> {
-  ScreenTab _tab = ScreenTab.subscriptions;
+  late ScreenTab _tab;
+
+  static ScreenTab _toScreenTab(SubscriptionsGoalsTab t) {
+    switch (t) {
+      case SubscriptionsGoalsTab.subscriptions:
+        return ScreenTab.subscriptions;
+      case SubscriptionsGoalsTab.goals:
+        return ScreenTab.goals;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = _toScreenTab(widget.initialTab);
+  }
+
+  @override
+  void didUpdateWidget(SubscriptionsGoalsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab) {
+      setState(() => _tab = _toScreenTab(widget.initialTab));
+    }
+  }
 
   void _switchTab(ScreenTab tab) {
     if (tab == _tab) return;
