@@ -94,6 +94,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                     selectedIndex: _currentIndex,
                     onIndexChanged: (index) {
                       if (index == 2) {
+                        HapticFeedback.heavyImpact();
                         _openTransactionSheet();
                         return;
                       }

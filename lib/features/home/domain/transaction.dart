@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/data/models/transaction_model.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 /// Domain model representing a single financial transaction (UI + local state).
 ///
@@ -189,9 +190,6 @@ class Transaction {
     );
   }
 
-  /// Formats amount as "-₺5,99" or "+₺5,99".
-  String get formattedAmount {
-    final sign = amount < 0 ? '-' : '+';
-    return '$sign₺${amount.abs().toStringAsFixed(2)}';
-  }
+  /// Formats amount with [appCurrencySymbol] and consistent spacing.
+  String get formattedAmount => amount.toAppCurrencySigned();
 }

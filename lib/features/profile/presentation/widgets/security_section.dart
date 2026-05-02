@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/profile_providers.dart';
 import 'profile_section_title.dart';
 
@@ -12,19 +13,26 @@ class SecuritySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
     final isBiometricEnabled = ref.watch(biometricProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ProfileSectionTitle(title: 'Security'),
+        ProfileSectionTitle(title: l10n.sectionSecurity),
         _CardWrapper(
           children: [
             ListTile(
               leading: _LeadingIcon(icon: Icons.person_outline_rounded, cs: cs),
-              title: const Text('Personal Info'),
+              title: Text(
+                l10n.securityPersonalInfo,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                'Name, phone, country/city',
+                l10n.securityPersonalInfoSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
@@ -33,9 +41,15 @@ class SecuritySection extends ConsumerWidget {
             _InternalDivider(),
             ListTile(
               leading: _LeadingIcon(icon: Icons.lock_outline_rounded, cs: cs),
-              title: const Text('Password & PIN'),
+              title: Text(
+                l10n.securityPasswordPin,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                'Update app lock & transaction PIN',
+                l10n.securityPasswordPinSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
@@ -44,9 +58,15 @@ class SecuritySection extends ConsumerWidget {
             _InternalDivider(),
             ListTile(
               leading: _LeadingIcon(icon: Icons.fingerprint_rounded, cs: cs),
-              title: const Text('Biometric Login'),
+              title: Text(
+                l10n.securityBiometric,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                'FaceID / TouchID',
+                l10n.securityBiometricSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Switch(
@@ -58,9 +78,15 @@ class SecuritySection extends ConsumerWidget {
             _InternalDivider(),
             ListTile(
               leading: _LeadingIcon(icon: Icons.verified_user_outlined, cs: cs),
-              title: const Text('Two-Factor Authentication (2FA)'),
+              title: Text(
+                l10n.security2fa,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                'SMS or Authenticator app',
+                l10n.security2faSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
@@ -72,9 +98,15 @@ class SecuritySection extends ConsumerWidget {
                 icon: Icons.notifications_active_outlined,
                 cs: cs,
               ),
-              title: const Text('Daily Transaction Limits'),
+              title: Text(
+                l10n.securityDailyLimits,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                'Set max daily spend to trigger dynamic alerts',
+                l10n.securityDailyLimitsSubtitle,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
@@ -86,8 +118,6 @@ class SecuritySection extends ConsumerWidget {
     );
   }
 }
-
-// ─── Shared sub-widgets ───────────────────────────────────────────────────────
 
 class _CardWrapper extends StatelessWidget {
   const _CardWrapper({required this.children});

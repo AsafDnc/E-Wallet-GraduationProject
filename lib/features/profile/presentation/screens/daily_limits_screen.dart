@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/profile_providers.dart';
 
 class DailyLimitsScreen extends ConsumerStatefulWidget {
@@ -41,15 +42,16 @@ class _DailyLimitsScreenState extends ConsumerState<DailyLimitsScreen> {
     setState(() => _isEditing = false);
     FocusScope.of(context).unfocus();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Daily limit updated'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.dailyLimitsUpdated),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final limits = ref.watch(dailyLimitsProvider);
@@ -64,9 +66,9 @@ class _DailyLimitsScreenState extends ConsumerState<DailyLimitsScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Daily Transaction Limits',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          l10n.securityDailyLimits,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: ListView(
@@ -102,14 +104,14 @@ class _DailyLimitsScreenState extends ConsumerState<DailyLimitsScreen> {
                           : cs.onSurfaceVariant,
                     ),
                   ),
-                  title: const Text(
-                    'Enable Daily Limit',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  title: Text(
+                    l10n.dailyLimitsEnableTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
                     limits.isEnabled
-                        ? 'You will be alerted when spending exceeds the limit'
-                        : 'No daily spending limit is enforced',
+                        ? l10n.dailyLimitsSubtitleEnabled
+                        : l10n.dailyLimitsSubtitleDisabled,
                     style: tt.bodySmall?.copyWith(
                       color: limits.isEnabled
                           ? const Color(0xFF27AE60)
@@ -133,6 +135,7 @@ class _DailyLimitsScreenState extends ConsumerState<DailyLimitsScreen> {
                   curve: Curves.easeInOutCubic,
                   child: limits.isEnabled
                       ? _LimitInputSection(
+                          l10n: l10n,
                           cs: cs,
                           tt: tt,
                           limits: limits,
@@ -167,9 +170,9 @@ class _DailyLimitsScreenState extends ConsumerState<DailyLimitsScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'When your total daily spending approaches or exceeds '
-                      'the limit, you will receive an in-app alert before '
-                      'confirming a transaction.',
+                      l10n.dailyLimitsInfoBody,
+                      maxLines: 6,
+                      overflow: TextOverflow.ellipsis,
                       style: tt.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                         height: 1.5,
@@ -190,6 +193,7 @@ class _DailyLimitsScreenState extends ConsumerState<DailyLimitsScreen> {
 
 class _LimitInputSection extends StatelessWidget {
   const _LimitInputSection({
+    required this.l10n,
     required this.cs,
     required this.tt,
     required this.limits,
@@ -199,6 +203,7 @@ class _LimitInputSection extends StatelessWidget {
     required this.onApply,
   });
 
+  final AppLocalizations l10n;
   final ColorScheme cs;
   final TextTheme tt;
   final DailyLimitsState limits;
@@ -218,7 +223,9 @@ class _LimitInputSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Daily Spending Limit',
+                l10n.dailyLimitsSectionTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.labelLarge?.copyWith(
                   color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -269,6 +276,7 @@ class _DisplayAmount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -293,7 +301,7 @@ class _DisplayAmount extends StatelessWidget {
         FilledButton.tonalIcon(
           onPressed: onEditTap,
           icon: const Icon(Icons.edit_rounded, size: 18),
-          label: const Text('Edit'),
+          label: Text(l10n.commonEdit),
           style: FilledButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -321,6 +329,7 @@ class _EditField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -335,7 +344,7 @@ class _EditField extends StatelessWidget {
               letterSpacing: -0.5,
             ),
             decoration: InputDecoration(
-              prefixText: '₺ ',
+              prefixText: appCurrencySymbolSpaced,
               prefixStyle: tt.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: cs.onSurfaceVariant,
@@ -366,7 +375,7 @@ class _EditField extends StatelessWidget {
         FilledButton.icon(
           onPressed: onApply,
           icon: const Icon(Icons.check_rounded, size: 18),
-          label: const Text('Apply'),
+          label: Text(l10n.commonApply),
           style: FilledButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

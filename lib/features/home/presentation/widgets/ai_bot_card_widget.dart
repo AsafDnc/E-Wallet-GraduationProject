@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/app_localizations.dart';
+
 /// A promotional card that surfaces an AI spending insight to the user.
 ///
 /// The content is intentionally kept static for now; replace with a
 /// Riverpod provider once a real AI recommendation feed is available.
 class AiBotCardWidget extends StatelessWidget {
   const AiBotCardWidget({super.key});
-
-  static const _description =
-      'Paying for YouTube and Spotify? Save \$70 per month by consolidating '
-      'your music habits on a single platform.';
 
   @override
   Widget build(BuildContext context) {
@@ -77,11 +75,14 @@ class _AiTextContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'AI Bot',
+          l10n.homeAiBotTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: cs.onSurface,
             fontSize: 14,
@@ -90,7 +91,9 @@ class _AiTextContent extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Text(
-          AiBotCardWidget._description,
+          l10n.homeAiBotDescription,
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: cs.onSurfaceVariant,
             fontSize: 13,

@@ -3,14 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../domain/category_model.dart';
 import '../providers/category_provider.dart';
+
+String _categoryTypeLabel(AppLocalizations l10n, CategoryType type) {
+  switch (type) {
+    case CategoryType.income:
+      return l10n.filterIncome;
+    case CategoryType.expense:
+      return l10n.filterExpense;
+  }
+}
 
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
     return DefaultTabController(
@@ -25,16 +36,18 @@ class CategoriesScreen extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
-            'Categories',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          title: Text(
+            l10n.categoriesScreenTitle,
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           bottom: TabBar(
             labelColor: cs.primary,
             unselectedLabelColor: cs.onSurfaceVariant,
             indicatorColor: cs.primary,
             indicatorSize: TabBarIndicatorSize.label,
-            tabs: CategoryType.values.map((t) => Tab(text: t.label)).toList(),
+            tabs: CategoryType.values
+                .map((t) => Tab(text: _categoryTypeLabel(l10n, t)))
+                .toList(),
           ),
         ),
         body: TabBarView(
@@ -45,7 +58,7 @@ class CategoriesScreen extends ConsumerWidget {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showCategoryDialog(context, ref),
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Category'),
+          label: Text(l10n.categoriesAddCategory),
         ),
       ),
     );
@@ -61,6 +74,7 @@ class _CategoryTabList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final categories = ref.watch(
       categoryProvider.select(
@@ -80,7 +94,12 @@ class _CategoryTabList extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No ${type.label.toLowerCase()} categories yet',
+              l10n.categoriesEmpty(
+                type == CategoryType.income
+                    ? l10n.categoryTypeIncomeLower
+                    : l10n.categoryTypeExpenseLower,
+              ),
+              textAlign: TextAlign.center,
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 15),
             ),
           ],
@@ -121,6 +140,7 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
     return Slidable(
@@ -133,7 +153,7 @@ class _CategoryTile extends StatelessWidget {
             backgroundColor: cs.errorContainer,
             foregroundColor: cs.onErrorContainer,
             icon: Icons.delete_outline_rounded,
-            label: 'Delete',
+            label: l10n.categoriesDelete,
             borderRadius: BorderRadius.circular(14),
           ),
         ],
@@ -292,13 +312,14 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final selColor = Color(_colorValue);
     final selIcon = IconData(_iconCode, fontFamily: 'MaterialIcons');
     final isEdit = widget.existing != null;
 
     return AlertDialog(
-      title: Text(isEdit ? 'Edit Category' : 'Add Category'),
+      title: Text(isEdit ? l10n.categoriesEditTitle : l10n.categoriesAddTitle),
       contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       content: SingleChildScrollView(
         child: Column(
@@ -324,7 +345,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               controller: _nameCtrl,
               autofocus: !isEdit,
               decoration: InputDecoration(
-                labelText: 'Category Name',
+                labelText: l10n.categoriesFieldName,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -334,7 +355,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
             // Type toggle
             Text(
-              'Type',
+              l10n.categoriesTypeLabel,
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(color: cs.onSurfaceVariant),
@@ -345,7 +366,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                   .map(
                     (t) => ButtonSegment<CategoryType>(
                       value: t,
-                      label: Text(t.label),
+                      label: Text(_categoryTypeLabel(l10n, t)),
                     ),
                   )
                   .toList(),
@@ -356,7 +377,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
             // Icon picker
             Text(
-              'Icon',
+              l10n.categoriesIconLabel,
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(color: cs.onSurfaceVariant),
@@ -403,7 +424,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
             // Color picker
             Text(
-              'Color',
+              l10n.categoriesColorLabel,
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(color: cs.onSurfaceVariant),
@@ -441,9 +462,12 @@ class _CategoryDialogState extends State<_CategoryDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
-        FilledButton(onPressed: _save, child: Text(isEdit ? 'Save' : 'Add')),
+        FilledButton(
+          onPressed: _save,
+          child: Text(isEdit ? l10n.commonSave : l10n.commonAdd),
+        ),
       ],
     );
   }

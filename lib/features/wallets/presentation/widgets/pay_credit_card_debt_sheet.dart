@@ -3,10 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../home/domain/transaction.dart';
 import '../../../home/providers/transactions_provider.dart';
 import '../../domain/models/wallet_entry_model.dart';
 import '../providers/wallet_providers.dart';
+
+enum _PayDebtFormError { invalidAmount, noSourceWallet }
 
 /// Opens the "Pay Credit Card Debt" bottom sheet for [creditCard].
 void showPayCreditCardDebtSheet({
@@ -37,7 +41,7 @@ class _PayCreditCardDebtSheetState
     extends ConsumerState<_PayCreditCardDebtSheet> {
   final _amountCtrl = TextEditingController();
   String? _fromWalletId;
-  String? _errorMessage;
+  _PayDebtFormError? _formError;
 
   @override
   void initState() {
@@ -61,19 +65,18 @@ class _PayCreditCardDebtSheetState
   }
 
   Future<void> _onConfirm() async {
+    final l10n = AppLocalizations.of(context)!;
     final rawText = _amountCtrl.text.trim().replaceAll(',', '.');
     final amount = double.tryParse(rawText);
     if (amount == null || amount <= 0) {
-      setState(
-        () => _errorMessage = 'Please enter a valid amount greater than 0.',
-      );
+      setState(() => _formError = _PayDebtFormError.invalidAmount);
       return;
     }
     if (_fromWalletId == null) {
-      setState(() => _errorMessage = 'Please select a source wallet.');
+      setState(() => _formError = _PayDebtFormError.noSourceWallet);
       return;
     }
-    setState(() => _errorMessage = null);
+    setState(() => _formError = null);
 
     HapticFeedback.mediumImpact();
     try {
@@ -82,7 +85,7 @@ class _PayCreditCardDebtSheetState
           .recordNewTransaction(
             Transaction(
               id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
-              title: 'Pay off ${widget.creditCard.name}',
+              title: l10n.payOffCardTransactionTitle(widget.creditCard.name),
               amount: -amount,
               iconData: Icons.credit_score_rounded.codePoint,
               iconBgColor: const Color(0xFF9B59B6),
@@ -98,6 +101,7 @@ class _PayCreditCardDebtSheetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final wallets = ref.watch(walletsProvider);
@@ -140,7 +144,7 @@ class _PayCreditCardDebtSheetState
 
               // ── Header ─────────────────────────────────────────────────────
               Text(
-                'Pay Credit Card Debt',
+                l10n.payCreditCardTitle,
                 style: TextStyle(
                   color: cs.onSurface,
                   fontSize: 20,
@@ -175,7 +179,7 @@ class _PayCreditCardDebtSheetState
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Outstanding debt: ₺${debtAmount.toStringAsFixed(2)}',
+                          l10n.payDebtOutstanding(debtAmount.toAppCurrency()),
                           style: TextStyle(
                             color: cs.onErrorContainer,
                             fontSize: 13,
@@ -193,10 +197,10 @@ class _PayCreditCardDebtSheetState
               // ── Error banner ───────────────────────────────────────────────
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child: _errorMessage == null
+                child: _formError == null
                     ? const SizedBox.shrink()
                     : Padding(
-                        key: ValueKey<String>(_errorMessage!),
+                        key: ValueKey<String>(_formError!.name),
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Material(
                           color: cs.errorContainer,
@@ -215,12 +219,17 @@ class _PayCreditCardDebtSheetState
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    _errorMessage!,
+                                    _formError ==
+                                            _PayDebtFormError.invalidAmount
+                                        ? l10n.payDebtErrorInvalidAmount
+                                        : l10n.payDebtErrorNoSourceWallet,
                                     style: TextStyle(
                                       color: cs.onErrorContainer,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
+                                    maxLines: 4,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -232,7 +241,7 @@ class _PayCreditCardDebtSheetState
 
               // ── Source wallet selector ─────────────────────────────────────
               Text(
-                'Pay from',
+                l10n.payDebtFromLabel,
                 style: TextStyle(
                   color: cs.onSurfaceVariant,
                   fontSize: 13,
@@ -244,7 +253,7 @@ class _PayCreditCardDebtSheetState
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'No other wallets available.',
+                    l10n.payDebtNoOtherWallets,
                     style: TextStyle(color: cs.onSurfaceVariant),
                   ),
                 )
@@ -299,8 +308,8 @@ class _PayCreditCardDebtSheetState
                                 ),
                                 Text(
                                   w.balance >= 0
-                                      ? '₺${w.balance.toStringAsFixed(2)}'
-                                      : '-₺${w.balance.abs().toStringAsFixed(2)}',
+                                      ? w.balance.toAppCurrency()
+                                      : w.balance.toAppCurrencySigned(),
                                   style: TextStyle(
                                     color: cs.onSurfaceVariant,
                                     fontSize: 12,
@@ -325,7 +334,7 @@ class _PayCreditCardDebtSheetState
 
               // ── Amount field ───────────────────────────────────────────────
               Text(
-                'Payment amount',
+                l10n.payDebtPaymentAmount,
                 style: TextStyle(
                   color: cs.onSurfaceVariant,
                   fontSize: 13,
@@ -339,7 +348,7 @@ class _PayCreditCardDebtSheetState
                   decimal: true,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Amount (₺)',
+                  labelText: l10n.payDebtAmountField(appCurrencySymbol),
                   filled: true,
                   fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
                   border: OutlineInputBorder(
@@ -370,12 +379,12 @@ class _PayCreditCardDebtSheetState
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('Confirm Payment'),
+                child: Text(l10n.payDebtConfirmPayment),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+                child: Text(l10n.commonCancel),
               ),
             ],
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/utils/currency_formatter.dart';
 import '../providers/wallet_providers.dart';
 
 class TotalBalanceCard extends ConsumerWidget {
@@ -17,7 +18,7 @@ class TotalBalanceCard extends ConsumerWidget {
 
     final formatter = NumberFormat.currency(
       locale: 'tr_TR',
-      symbol: '₺ ',
+      symbol: appCurrencySymbolSpaced,
       decimalDigits: 2,
     );
 
@@ -89,7 +90,9 @@ class TotalBalanceCard extends ConsumerWidget {
             ),
             child: Text(
               key: ValueKey('$isVisible-$balance'),
-              isVisible ? formatter.format(balance) : '₺ ••••••',
+              isVisible
+                  ? formatter.format(balance)
+                  : '$appCurrencySymbolSpaced••••••',
               style: tt.headlineLarge?.copyWith(
                 color: cs.onPrimaryContainer,
                 fontWeight: FontWeight.w800,

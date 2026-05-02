@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../entry/presentation/add_entry_bottom_sheet.dart';
 import '../../../home/domain/transaction.dart';
 import '../../../home/providers/transactions_provider.dart';
@@ -150,6 +152,7 @@ class _AccountsWalletsDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final wallets = ref.watch(walletsProvider);
     final profile = ref.watch(profileProvider);
@@ -189,7 +192,7 @@ class _AccountsWalletsDashboardScreenState
       backgroundColor: cs.surface,
       body: SafeArea(
         child: wallets.isEmpty
-            ? _EmptyWallets(cs: cs)
+            ? _EmptyWallets(cs: cs, l10n: l10n)
             : CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
@@ -198,7 +201,7 @@ class _AccountsWalletsDashboardScreenState
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(22, 20, 22, 14),
                       child: Text(
-                        'Accounts',
+                        l10n.accountsScreenTitle,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w800,
@@ -289,6 +292,7 @@ class _AccountsWalletsDashboardScreenState
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
                       child: _AccountsActionButtonsBar(
+                        l10n: l10n,
                         pageController: _pageController!,
                         onAdd: _openAddEntry,
                         onOpenTransfer: _openTransferSheet,
@@ -301,6 +305,7 @@ class _AccountsWalletsDashboardScreenState
                   // ── Filter bar ────────────────────────────────────────────
                   SliverToBoxAdapter(
                     child: _FilterBar(
+                      l10n: l10n,
                       amountFilter: _amountFilter,
                       onSearch: (v) => setState(() => _searchQuery = v),
                       onFilter: (f) => setState(() => _amountFilter = f),
@@ -314,14 +319,14 @@ class _AccountsWalletsDashboardScreenState
                       child: Row(
                         children: [
                           Text(
-                            'History',
+                            l10n.accountsHistoryTitle,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           const Spacer(),
                           if (!_txShimmer)
                             Text(
-                              '${filtered.length} item${filtered.length == 1 ? '' : 's'}',
+                              l10n.historyItemCount(filtered.length),
                               style: TextStyle(
                                 color: cs.onSurfaceVariant,
                                 fontSize: 12,
@@ -339,6 +344,7 @@ class _AccountsWalletsDashboardScreenState
                   else if (filtered.isEmpty)
                     SliverToBoxAdapter(
                       child: _EmptyTransactions(
+                        l10n: l10n,
                         hasActiveFilters:
                             _searchQuery.isNotEmpty ||
                             _amountFilter != _AmountFilter.all,
@@ -536,13 +542,18 @@ class _PremiumWalletCard extends StatelessWidget {
                                   width: 0.5,
                                 ),
                               ),
-                              child: const Text(
-                                'PRIMARY',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.0,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.walletBadgePrimary,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.0,
+                                  ),
                                 ),
                               ),
                             ),
@@ -671,6 +682,7 @@ class _ChipPainter extends CustomPainter {
 
 class _AccountsActionButtonsBar extends ConsumerStatefulWidget {
   const _AccountsActionButtonsBar({
+    required this.l10n,
     required this.pageController,
     required this.onAdd,
     required this.onOpenTransfer,
@@ -678,6 +690,7 @@ class _AccountsActionButtonsBar extends ConsumerStatefulWidget {
     required this.onOpenCardSettings,
   });
 
+  final AppLocalizations l10n;
   final PageController pageController;
   final VoidCallback onAdd;
   final void Function(WalletEntry wallet) onOpenTransfer;
@@ -712,12 +725,12 @@ class _AccountsActionButtonsBarState
       children: [
         _ActionButton(
           icon: Icons.add_rounded,
-          label: 'Add',
+          label: widget.l10n.accountsActionAdd,
           onTap: widget.onAdd,
         ),
         _ActionButton(
           icon: Icons.swap_horiz_rounded,
-          label: 'Transfer',
+          label: widget.l10n.accountsActionTransfer,
           onTap: () {
             final w = _walletForTap();
             if (w == null) return;
@@ -726,7 +739,7 @@ class _AccountsActionButtonsBarState
         ),
         _ActionButton(
           icon: Icons.credit_score_rounded,
-          label: 'Pay Debt',
+          label: widget.l10n.accountsActionPayDebt,
           onTap: () {
             final w = _walletForTap();
             if (w == null) return;
@@ -735,7 +748,7 @@ class _AccountsActionButtonsBarState
         ),
         _ActionButton(
           icon: Icons.settings_rounded,
-          label: 'Settings',
+          label: widget.l10n.accountsActionSettings,
           onTap: () {
             final w = _walletForTap();
             if (w == null) return;
@@ -790,6 +803,9 @@ class _ActionButton extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -813,11 +829,13 @@ class _ActionButton extends StatelessWidget {
 
 class _FilterBar extends StatefulWidget {
   const _FilterBar({
+    required this.l10n,
     required this.amountFilter,
     required this.onSearch,
     required this.onFilter,
   });
 
+  final AppLocalizations l10n;
   final _AmountFilter amountFilter;
   final ValueChanged<String> onSearch;
   final ValueChanged<_AmountFilter> onFilter;
@@ -898,13 +916,13 @@ class _FilterBarState extends State<_FilterBar> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _FilterChipItem(
-                            label: 'All',
+                            label: widget.l10n.filterAll,
                             selected: widget.amountFilter == _AmountFilter.all,
                             onTap: () => widget.onFilter(_AmountFilter.all),
                           ),
                           const SizedBox(width: 8),
                           _FilterChipItem(
-                            label: 'Income',
+                            label: widget.l10n.filterIncome,
                             selected:
                                 widget.amountFilter == _AmountFilter.income,
                             onTap: () => widget.onFilter(_AmountFilter.income),
@@ -912,7 +930,7 @@ class _FilterBarState extends State<_FilterBar> {
                           ),
                           const SizedBox(width: 8),
                           _FilterChipItem(
-                            label: 'Expense',
+                            label: widget.l10n.filterExpense,
                             selected:
                                 widget.amountFilter == _AmountFilter.expense,
                             onTap: () => widget.onFilter(_AmountFilter.expense),
@@ -964,7 +982,7 @@ class _FilterBarState extends State<_FilterBar> {
                                         fontSize: 14,
                                       ),
                                       decoration: InputDecoration(
-                                        hintText: 'Search...',
+                                        hintText: widget.l10n.searchHint,
                                         hintStyle: TextStyle(
                                           color: cs.onSurfaceVariant.withValues(
                                             alpha: 0.6,
@@ -1080,6 +1098,9 @@ class _FilterChipItem extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: selected ? color : cs.onSurfaceVariant,
             fontSize: 13,
@@ -1114,12 +1135,9 @@ class _TransactionTile extends StatelessWidget {
   static const double _slideRatio = 0.22;
   static const _slideRadius = BorderRadius.all(Radius.circular(14));
 
-  static String _fmtDate(DateTime d) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${d.day} ${months[d.month - 1]}';
+  static String _fmtDate(BuildContext context, DateTime d) {
+    final tag = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat.MMMd(tag).format(d);
   }
 
   @override
@@ -1238,7 +1256,7 @@ class _TransactionTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          _fmtDate(transaction.createdAt),
+                          _fmtDate(context, transaction.createdAt),
                           style: TextStyle(
                             color: cs.onSurfaceVariant,
                             fontSize: 12,
@@ -1285,9 +1303,10 @@ class _TransactionTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EmptyWallets extends StatelessWidget {
-  const _EmptyWallets({required this.cs});
+  const _EmptyWallets({required this.cs, required this.l10n});
 
   final ColorScheme cs;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -1310,21 +1329,25 @@ class _EmptyWallets extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'No wallets yet',
+            l10n.emptyNoWalletsTitle,
             style: TextStyle(
               color: cs.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
-            'Add a wallet from the\nMy Wallets tab to get started.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: cs.onSurfaceVariant,
-              fontSize: 14,
-              height: 1.6,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              l10n.emptyNoWalletsBody,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: cs.onSurfaceVariant,
+                fontSize: 14,
+                height: 1.6,
+              ),
             ),
           ),
         ],
@@ -1334,8 +1357,12 @@ class _EmptyWallets extends StatelessWidget {
 }
 
 class _EmptyTransactions extends StatelessWidget {
-  const _EmptyTransactions({required this.hasActiveFilters});
+  const _EmptyTransactions({
+    required this.l10n,
+    required this.hasActiveFilters,
+  });
 
+  final AppLocalizations l10n;
   final bool hasActiveFilters;
 
   @override
@@ -1364,7 +1391,10 @@ class _EmptyTransactions extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            hasActiveFilters ? 'No results' : 'No transactions yet',
+            hasActiveFilters
+                ? l10n.emptyNoResultsTitle
+                : l10n.emptyNoTransactionsTitle,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: cs.onSurface,
               fontSize: 17,
@@ -1374,8 +1404,8 @@ class _EmptyTransactions extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             hasActiveFilters
-                ? 'Try adjusting your search or filters.'
-                : 'Transactions for this wallet\nwill appear here.',
+                ? l10n.emptyNoResultsBody
+                : l10n.emptyNoTransactionsBody,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: cs.onSurfaceVariant,

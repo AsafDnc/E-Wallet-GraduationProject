@@ -1,8 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/utils/currency_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../budget/providers/budget_providers.dart';
 import '../../categories/domain/category_model.dart';
 import '../../categories/providers/category_provider.dart';
@@ -16,14 +19,14 @@ import '../../wallets/presentation/providers/wallet_providers.dart';
 enum _EntryMode { income, transfer, expense }
 
 extension _EntryModeX on _EntryMode {
-  String get label {
+  String label(AppLocalizations l10n) {
     switch (this) {
       case _EntryMode.income:
-        return 'Income';
+        return l10n.entryModeIncome;
       case _EntryMode.transfer:
-        return 'Transfer';
+        return l10n.entryModeTransfer;
       case _EntryMode.expense:
-        return 'Expense';
+        return l10n.entryModeExpense;
     }
   }
 
@@ -41,24 +44,9 @@ extension _EntryModeX on _EntryMode {
 
 // Category type alias — using the shared domain model throughout this file.
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
-String _formatDate(DateTime d) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${d.day} ${months[d.month - 1]} ${d.year},';
+String _formatLocalizedDate(BuildContext context, DateTime d) {
+  final tag = Localizations.localeOf(context).toLanguageTag();
+  return '${DateFormat.yMMMd(tag).format(d)},';
 }
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
@@ -169,9 +157,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   String get _amountDisplay {
-    if (_buffer.isEmpty) return '₺0';
-    if (_buffer == '.') return '₺0.';
-    return '₺$_buffer';
+    if (_buffer.isEmpty) return '${appCurrencySymbolSpaced}0';
+    if (_buffer == '.') return '${appCurrencySymbolSpaced}0.';
+    return '$appCurrencySymbolSpaced$_buffer';
   }
 
   bool get _canSave {
@@ -187,8 +175,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     return _effectivePrimaryWalletId(wallets) != null;
   }
 
-  String get _buttonLabel =>
-      _mode == _EntryMode.transfer ? 'Add Transfer' : 'Add Transaction';
+  String _buttonLabel(AppLocalizations l10n) => _mode == _EntryMode.transfer
+      ? l10n.entryAddTransfer
+      : l10n.entryAddTransaction;
 
   void _onModeChanged(_EntryMode m) {
     final all = ref.read(categoryProvider);
@@ -229,16 +218,125 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     });
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+  /// Native iOS-style wheel picker (adaptive light/dark surface + Done).
+  void _pickDate() {
+    var draft = DateTime(_date.year, _date.month, _date.day);
+    showCupertinoModalPopup<void>(
       context: context,
-      initialDate: _date,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        final bottom = MediaQuery.paddingOf(ctx).bottom;
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Material(
+              color: Colors.transparent,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: cs.shadow.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: cs.outlineVariant.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 56),
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.entrySelectDateTitle,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            CupertinoButton(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                if (mounted) {
+                                  setState(() => _date = draft);
+                                }
+                              },
+                              child: Text(
+                                AppLocalizations.of(ctx)!.commonDone,
+                                style: TextStyle(
+                                  color: cs.primary,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: 216,
+                        child: CupertinoTheme(
+                          data: CupertinoThemeData(
+                            brightness: Theme.of(ctx).brightness,
+                            primaryColor: cs.primary,
+                            textTheme: CupertinoTextThemeData(
+                              dateTimePickerTextStyle: TextStyle(
+                                color: cs.onSurface,
+                                fontSize: 22,
+                              ),
+                            ),
+                          ),
+                          child: CupertinoDatePicker(
+                            mode: CupertinoDatePickerMode.date,
+                            initialDateTime: draft,
+                            minimumDate: DateTime(2020),
+                            maximumDate: DateTime(2030),
+                            onDateTimeChanged: (d) {
+                              setModalState(() {
+                                draft = DateTime(d.year, d.month, d.day);
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: bottom),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
-    if (picked != null && mounted) {
-      setState(() => _date = picked);
-    }
   }
 
   Future<void> _pickCategory() async {
@@ -247,7 +345,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _CategorySheet(categories: cats, selected: _category),
+      builder: (_) => _CategorySheet(
+        l10n: AppLocalizations.of(context)!,
+        categories: cats,
+        selected: _category,
+      ),
     );
     if (result != null && mounted) setState(() => _category = result);
   }
@@ -264,7 +366,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         wallets: wallets,
         selectedId: currentId,
         excludeId: isDestination ? _selectedWalletId : null,
-        title: isDestination ? 'To Wallet' : 'From Wallet',
+        title: isDestination
+            ? AppLocalizations.of(context)!.entryWalletToTitle
+            : AppLocalizations.of(context)!.entryWalletFromTitle,
       ),
     );
     if (result != null && mounted) {
@@ -282,6 +386,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     final amount = _parsedAmount;
     if (amount == null || amount <= 0) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final wallets = ref.read(walletsProvider);
 
     if (_mode == _EntryMode.transfer) {
@@ -300,7 +405,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               .recordNewTransaction(
                 Transaction(
                   id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
-                  title: 'Transfer to $dstName',
+                  title: l10n.transferToWalletTitle(dstName),
                   amount: -amount,
                   iconData: Icons.swap_horiz_rounded.codePoint,
                   iconBgColor: Theme.of(context).colorScheme.primary,
@@ -351,7 +456,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
                 title: _noteCtrl.text.trim().isNotEmpty
                     ? _noteCtrl.text.trim()
-                    : (_category?.name ?? 'Transaction'),
+                    : (_category?.name ?? l10n.transactionDefaultTitle),
                 amount: signed,
                 iconData:
                     _category?.displayIcon.codePoint ??
@@ -375,10 +480,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   // ─── Wallet label helpers ──────────────────────────────────────────────────
 
-  String _walletLabel(String? id, List<WalletEntry> wallets) {
-    if (id == null || wallets.isEmpty) return 'Select Wallet';
+  String _walletLabel(
+    AppLocalizations l10n,
+    String? id,
+    List<WalletEntry> wallets,
+  ) {
+    if (id == null || wallets.isEmpty) return l10n.entrySelectWallet;
     final found = wallets.where((w) => w.id == id);
-    return found.isNotEmpty ? found.first.name : 'Select Wallet';
+    return found.isNotEmpty ? found.first.name : l10n.entrySelectWallet;
   }
 
   IconData _walletIcon(String? id, List<WalletEntry> wallets) {
@@ -393,6 +502,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
     final wallets = ref.watch(walletsProvider);
@@ -430,7 +540,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             const SizedBox(height: 20),
 
             // ── 3-way segment control ─────────────────────────────────────
-            _SegmentControl(mode: _mode, onChanged: _onModeChanged),
+            _SegmentControl(mode: _mode, l10n: l10n, onChanged: _onModeChanged),
             const SizedBox(height: 14),
 
             // ── Budget alert (dynamic) ────────────────────────────────────
@@ -445,6 +555,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       key: const ValueKey('budget_alert'),
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _BudgetAlertBanner(
+                        l10n: l10n,
                         thresholdPercent: (budgetSettings.alertThreshold * 100)
                             .toInt(),
                       ),
@@ -454,7 +565,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
             // ── Amount display ────────────────────────────────────────────
             Text(
-              'Amount',
+              l10n.entryAmountLabel,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: cs.onSurfaceVariant,
@@ -484,7 +595,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               controller: _noteCtrl,
               style: TextStyle(color: cs.onSurface, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Add a note (optional)',
+                hintText: l10n.entryNoteHint,
                 hintStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
                 prefixIcon: Icon(
                   Icons.edit_note_rounded,
@@ -520,8 +631,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   Expanded(
                     child: _InputBox(
                       icon: _walletIcon(_selectedWalletId, wallets),
-                      label: _walletLabel(_selectedWalletId, wallets),
-                      subLabel: 'From',
+                      label: _walletLabel(l10n, _selectedWalletId, wallets),
+                      subLabel: l10n.entryTransferFromShort,
                       onTap: () => _pickWallet(),
                     ),
                   ),
@@ -535,8 +646,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   Expanded(
                     child: _InputBox(
                       icon: _walletIcon(_selectedToWalletId, wallets),
-                      label: _walletLabel(_selectedToWalletId, wallets),
-                      subLabel: 'To',
+                      label: _walletLabel(l10n, _selectedToWalletId, wallets),
+                      subLabel: l10n.entryTransferToShort,
                       onTap: () => _pickWallet(isDestination: true),
                     ),
                   ),
@@ -545,35 +656,35 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               const SizedBox(height: 10),
               _InputBox(
                 icon: Icons.calendar_today_rounded,
-                label: _formatDate(_date),
+                label: _formatLocalizedDate(context, _date),
                 onTap: _pickDate,
               ),
               const SizedBox(height: 14),
             ] else ...[
-              // ── Category  |  Wallet  |  Date ─────────────────────────────
+              // ── Date  |  Wallet  |  Category (date left for quick access) ─
               Row(
                 children: [
                   Expanded(
                     child: _InputBox(
-                      icon: _category?.displayIcon ?? Icons.category_rounded,
-                      label: _category?.name ?? 'Category',
-                      onTap: _pickCategory,
+                      icon: Icons.calendar_today_rounded,
+                      label: _formatLocalizedDate(context, _date),
+                      onTap: _pickDate,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _InputBox(
                       icon: _walletIcon(_selectedWalletId, wallets),
-                      label: _walletLabel(_selectedWalletId, wallets),
+                      label: _walletLabel(l10n, _selectedWalletId, wallets),
                       onTap: () => _pickWallet(),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _InputBox(
-                      icon: Icons.calendar_today_rounded,
-                      label: _formatDate(_date),
-                      onTap: _pickDate,
+                      icon: _category?.displayIcon ?? Icons.category_rounded,
+                      label: _category?.name ?? l10n.entryCategoryPlaceholder,
+                      onTap: _pickCategory,
                     ),
                   ),
                 ],
@@ -601,8 +712,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: Text(
-                    _buttonLabel,
-                    key: ValueKey(_buttonLabel),
+                    _buttonLabel(l10n),
+                    key: ValueKey(_buttonLabel(l10n)),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -621,9 +732,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 // ─── 3-Way Segment Control ────────────────────────────────────────────────────
 
 class _SegmentControl extends StatelessWidget {
-  const _SegmentControl({required this.mode, required this.onChanged});
+  const _SegmentControl({
+    required this.mode,
+    required this.l10n,
+    required this.onChanged,
+  });
 
   final _EntryMode mode;
+  final AppLocalizations l10n;
   final ValueChanged<_EntryMode> onChanged;
 
   @override
@@ -667,7 +783,7 @@ class _SegmentControl extends StatelessWidget {
                     .map(
                       (m) => Expanded(
                         child: _SegTab(
-                          label: m.label,
+                          label: m.label(l10n),
                           selected: m == mode,
                           selectedColor: Colors.white,
                           unselectedColor: cs.onSurfaceVariant,
@@ -724,8 +840,12 @@ class _SegTab extends StatelessWidget {
 // ─── Budget Alert Banner ──────────────────────────────────────────────────────
 
 class _BudgetAlertBanner extends StatelessWidget {
-  const _BudgetAlertBanner({required this.thresholdPercent});
+  const _BudgetAlertBanner({
+    required this.l10n,
+    required this.thresholdPercent,
+  });
 
+  final AppLocalizations l10n;
   final int thresholdPercent;
 
   @override
@@ -757,20 +877,24 @@ class _BudgetAlertBanner extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '⚠️ Budget Alert',
+                  l10n.entryBudgetAlertTitle,
                   style: TextStyle(
                     color: cs.onErrorContainer,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'This exceeds your $thresholdPercent% budget limit!',
+                  l10n.entryBudgetAlertBody(thresholdPercent),
                   style: TextStyle(
                     color: cs.onErrorContainer.withValues(alpha: 0.8),
                     fontSize: 12,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -931,8 +1055,13 @@ class _NumKey extends StatelessWidget {
 // ─── Category Picker Sheet ────────────────────────────────────────────────────
 
 class _CategorySheet extends StatelessWidget {
-  const _CategorySheet({required this.categories, required this.selected});
+  const _CategorySheet({
+    required this.l10n,
+    required this.categories,
+    required this.selected,
+  });
 
+  final AppLocalizations l10n;
   final List<Category> categories;
   final Category? selected;
 
@@ -967,7 +1096,7 @@ class _CategorySheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                'Select Category',
+                l10n.entrySelectCategoryTitle,
                 style: TextStyle(
                   color: cs.onSurface,
                   fontSize: 18,

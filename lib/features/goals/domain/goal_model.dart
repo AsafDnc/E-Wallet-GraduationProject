@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/currency_formatter.dart';
+
 /// Saving goal shown in lists and charts.
 ///
 /// Backed by Supabase table `saving_goals`:
@@ -26,9 +28,11 @@ class GoalModel {
   final bool isPinned;
 
   String get savingsLabel =>
-      '\$${_formatNumber(savedAmount)} / \$${_formatNumber(targetAmount)}';
-  String get currentAmountLabel => '\$${_formatNumber(savedAmount)}';
-  String get targetAmountLabel => '/ \$${_formatNumber(targetAmount)}';
+      '$appCurrencySymbolSpaced${_formatNumber(savedAmount)} / $appCurrencySymbolSpaced${_formatNumber(targetAmount)}';
+  String get currentAmountLabel =>
+      '$appCurrencySymbolSpaced${_formatNumber(savedAmount)}';
+  String get targetAmountLabel =>
+      '/ $appCurrencySymbolSpaced${_formatNumber(targetAmount)}';
   String get percentLabel => '%${(progress * 100).round()}';
 
   static String _formatNumber(int value) {

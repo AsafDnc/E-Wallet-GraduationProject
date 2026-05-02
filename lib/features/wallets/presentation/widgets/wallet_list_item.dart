@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/models/wallet_entry_model.dart';
+import '../utils/wallet_type_l10n.dart';
 
 class WalletListItem extends StatelessWidget {
   const WalletListItem({super.key, required this.wallet, required this.onTap});
@@ -11,12 +14,13 @@ class WalletListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     final formatter = NumberFormat.currency(
       locale: 'tr_TR',
-      symbol: '₺ ',
+      symbol: appCurrencySymbolSpaced,
       decimalDigits: 2,
     );
 
@@ -73,13 +77,13 @@ class WalletListItem extends StatelessWidget {
                           ),
                           if (wallet.isDefault) ...[
                             const SizedBox(width: 6),
-                            _PrimaryBadge(cs: cs),
+                            _PrimaryBadge(l10n: l10n, cs: cs),
                           ],
                         ],
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        wallet.type.label,
+                        walletTypeDisplayName(l10n, wallet.type),
                         style: tt.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),
@@ -101,7 +105,7 @@ class WalletListItem extends StatelessWidget {
                     ),
                     if (isNegative)
                       Text(
-                        'Debt',
+                        l10n.walletDebtLabel,
                         style: tt.labelSmall?.copyWith(color: cs.error),
                       ),
                   ],
@@ -119,8 +123,9 @@ class WalletListItem extends StatelessWidget {
 }
 
 class _PrimaryBadge extends StatelessWidget {
-  const _PrimaryBadge({required this.cs});
+  const _PrimaryBadge({required this.l10n, required this.cs});
 
+  final AppLocalizations l10n;
   final ColorScheme cs;
 
   @override
@@ -131,13 +136,16 @@ class _PrimaryBadge extends StatelessWidget {
         color: cs.primary,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        'Primary',
-        style: TextStyle(
-          color: cs.onPrimary,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          l10n.walletBadgePrimary,
+          style: TextStyle(
+            color: cs.onPrimary,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
         ),
       ),
     );

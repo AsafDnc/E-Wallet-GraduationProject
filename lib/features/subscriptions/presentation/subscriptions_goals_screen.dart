@@ -2,33 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-import '../../goals/domain/goal_model.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../goals/presentation/widgets/goal_card_widget.dart';
 import '../../goals/providers/goals_provider.dart';
 import '../domain/subscriptions_goals_tab.dart';
 import '../providers/subscriptions_provider.dart';
 import 'widgets/subscription_card_widget.dart';
+import 'widgets/subscriptions_goals_add_sheets.dart';
 
 // ─── Tab enum ─────────────────────────────────────────────────────────────────
 
 enum ScreenTab { subscriptions, goals }
 
 extension _ScreenTabX on ScreenTab {
-  String get label {
+  String localizedTitle(AppLocalizations l10n) {
     switch (this) {
       case ScreenTab.subscriptions:
-        return 'Subscriptions';
+        return l10n.subscriptionsTab;
       case ScreenTab.goals:
-        return 'Saving Goals';
+        return l10n.savingGoalsTab;
     }
   }
 
-  String get sectionTitle {
+  String localizedAmountHeading(AppLocalizations l10n) {
     switch (this) {
       case ScreenTab.subscriptions:
-        return 'Total Monthly Cost';
+        return l10n.subscriptionsTotalMonthlyCost;
       case ScreenTab.goals:
-        return 'Saving Goals Cost';
+        return l10n.savingGoalsCostTitle;
     }
   }
 }
@@ -83,6 +85,7 @@ class _SubscriptionsGoalsScreenState
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -90,9 +93,9 @@ class _SubscriptionsGoalsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(),
+            _buildHeader(l10n),
             const SizedBox(height: 20),
-            _buildAmountSection(),
+            _buildAmountSection(l10n),
             const SizedBox(height: 18),
             Expanded(child: _buildBody()),
           ],
@@ -103,17 +106,22 @@ class _SubscriptionsGoalsScreenState
 
   // ─── Header: centered segment control, no "+" button ──────────────────────
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-      child: _SlidingSegmentControl(tab: _tab, onChanged: _switchTab),
+      child: _SlidingSegmentControl(
+        tab: _tab,
+        l10n: l10n,
+        onChanged: _switchTab,
+      ),
     );
   }
 
   // ─── Amount section: title label + animated large amount ──────────────────
 
-  Widget _buildAmountSection() {
+  Widget _buildAmountSection(AppLocalizations l10n) {
     final cs = Theme.of(context).colorScheme;
+    final heading = _tab.localizedAmountHeading(l10n);
 
     return Column(
       children: [
@@ -124,14 +132,23 @@ class _SubscriptionsGoalsScreenState
             opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
             child: child,
           ),
-          child: Text(
-            _tab.sectionTitle,
-            key: ValueKey(_tab.sectionTitle),
-            style: TextStyle(
-              color: cs.onSurfaceVariant,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
+          child: Padding(
+            key: ValueKey<String>(heading),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                heading,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
             ),
           ),
         ),
@@ -170,12 +187,73 @@ class _SubscriptionsGoalsScreenState
   }
 }
 
+// ─── Premium minimalist “+” — white bg, soft gray shadow, gray icon ────────
+
+class _PremiumCircularAddButton extends StatelessWidget {
+  const _PremiumCircularAddButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  static const _bg = Color(0xFFFFFFFF);
+  static const _icon = Color(0xFF5A5F6A);
+  static const _border = Color(0xFFE8EAED);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context)!.addButtonLabel,
+      child: Material(
+        type: MaterialType.transparency,
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          splashColor: const Color(0x0A5A5F6A),
+          highlightColor: const Color(0x055A5F6A),
+          child: Ink(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _bg,
+              border: Border.all(color: _border, width: 1.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  blurRadius: 20,
+                  spreadRadius: 0,
+                  offset: Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Color(0x0A000000),
+                  blurRadius: 6,
+                  spreadRadius: -2,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.add_rounded, color: _icon, size: 28),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Sliding segment control ──────────────────────────────────────────────────
 
 class _SlidingSegmentControl extends StatelessWidget {
-  const _SlidingSegmentControl({required this.tab, required this.onChanged});
+  const _SlidingSegmentControl({
+    required this.tab,
+    required this.l10n,
+    required this.onChanged,
+  });
 
   final ScreenTab tab;
+  final AppLocalizations l10n;
   final void Function(ScreenTab) onChanged;
 
   static const _pillColor = Color(0xFF1E2330);
@@ -227,7 +305,7 @@ class _SlidingSegmentControl extends StatelessWidget {
                     .map(
                       (t) => Expanded(
                         child: _SegTab(
-                          label: t.label,
+                          label: t.localizedTitle(l10n),
                           selected: t == tab,
                           selectedColor: Colors.white,
                           unselectedColor: cs.onSurfaceVariant,
@@ -266,15 +344,23 @@ class _SegTab extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Center(
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 180),
-          style: TextStyle(
-            fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-            color: selected ? selectedColor : unselectedColor,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 15,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 180),
+            style: TextStyle(
+              fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
+              color: selected ? selectedColor : unselectedColor,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 14,
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
           ),
-          child: Text(label),
         ),
       ),
     );
@@ -293,14 +379,19 @@ class _SubsTotal extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Align(
-      child: Text(
-        '\$${total.toStringAsFixed(2)}',
-        style: TextStyle(
-          color: cs.onSurface,
-          fontSize: 36,
-          fontWeight: FontWeight.w700,
-          height: 1.1,
-          letterSpacing: -0.8,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          total.toAppCurrency(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: cs.onSurface,
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            height: 1.1,
+            letterSpacing: -0.8,
+          ),
         ),
       ),
     );
@@ -318,31 +409,36 @@ class _GoalsTotal extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Align(
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '\$${_fmt(saved)} ',
-              style: TextStyle(
-                color: cs.onSurface,
-                fontSize: 36,
-                fontWeight: FontWeight.w700,
-                height: 1.1,
-                letterSpacing: -0.8,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '$appCurrencySymbolSpaced${_fmt(saved)} ',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                  letterSpacing: -0.8,
+                ),
               ),
-            ),
-            TextSpan(
-              text: '/ \$${_fmt(target)}',
-              style: TextStyle(
-                color: cs.onSurfaceVariant,
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 1.1,
+              TextSpan(
+                text: '/ $appCurrencySymbolSpaced${_fmt(target)}',
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  height: 1.1,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }
@@ -358,149 +454,116 @@ class _GoalsTotal extends ConsumerWidget {
   }
 }
 
-// ─── Subscriptions list ───────────────────────────────────────────────────────
+// ─── Subscriptions list + animated “+” (top when empty, bottom when filled) ───
 
 class _SubscriptionsList extends ConsumerWidget {
   const _SubscriptionsList({super.key});
+
+  static const _alignDuration = Duration(milliseconds: 400);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rawItems = ref.watch(subscriptionsProvider);
     final items = [...rawItems]
       ..sort((a, b) => a.daysUntilRenewal.compareTo(b.daysUntilRenewal));
+    final isEmpty = items.isEmpty;
 
-    return SlidableAutoCloseBehavior(
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 120),
-        itemCount: items.length,
-        itemBuilder: (_, index) {
-          final sub = items[index];
-          return SubscriptionCardWidget(
-            subscription: sub,
-            onDelete: () => ref
-                .read(subscriptionsProvider.notifier)
-                .removeSubscription(sub.id),
-          );
-        },
-      ),
+    return Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: isEmpty
+              ? const SizedBox.expand()
+              : SlidableAutoCloseBehavior(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 140),
+                    itemCount: items.length,
+                    itemBuilder: (_, index) {
+                      final sub = items[index];
+                      return SubscriptionCardWidget(
+                        subscription: sub,
+                        onDelete: () => ref
+                            .read(subscriptionsProvider.notifier)
+                            .removeSubscription(sub.id),
+                      );
+                    },
+                  ),
+                ),
+        ),
+        AnimatedAlign(
+          duration: _alignDuration,
+          curve: Curves.easeInOutCubic,
+          alignment: isEmpty ? Alignment.topCenter : Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: isEmpty ? 6 : 0,
+              bottom: isEmpty ? 0 : 100,
+            ),
+            child: _PremiumCircularAddButton(
+              onPressed: () => showAddSubscriptionSheet(context),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ─── Goals list ───────────────────────────────────────────────────────────────
+// ─── Goals list + same animated “+” pattern ────────────────────────────────────
 
-class _GoalsList extends ConsumerStatefulWidget {
+class _GoalsList extends ConsumerWidget {
   const _GoalsList({super.key});
 
-  @override
-  ConsumerState<_GoalsList> createState() => _GoalsListState();
-}
-
-class _GoalsListState extends ConsumerState<_GoalsList> {
-  final _listKey = GlobalKey<AnimatedListState>();
-
-  void _onPin(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final fromIdx = before.indexWhere((g) => g.id == id);
-    if (fromIdx < 0) return;
-    if (fromIdx == 0) {
-      notifier.pinGoal(id);
-      return;
-    }
-    _listKey.currentState?.removeItem(
-      fromIdx,
-      (context, animation) => _tile(before[fromIdx], animation),
-      duration: const Duration(milliseconds: 280),
-    );
-    notifier.pinGoal(id);
-    Future.delayed(const Duration(milliseconds: 60), () {
-      if (!mounted) return;
-      _listKey.currentState?.insertItem(
-        0,
-        duration: const Duration(milliseconds: 400),
-      );
-    });
-  }
-
-  void _onUnpin(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final fromIdx = before.indexWhere((g) => g.id == id);
-    if (fromIdx < 0) return;
-    _listKey.currentState?.removeItem(
-      fromIdx,
-      (context, animation) => _tile(before[fromIdx], animation),
-      duration: const Duration(milliseconds: 280),
-    );
-    notifier.unpinGoal(id);
-    Future.delayed(const Duration(milliseconds: 60), () {
-      if (!mounted) return;
-      final next = ref.read(goalsProvider).goals;
-      final newIdx = next.indexWhere((g) => g.id == id);
-      if (newIdx >= 0) {
-        _listKey.currentState?.insertItem(
-          newIdx,
-          duration: const Duration(milliseconds: 400),
-        );
-      }
-    });
-  }
-
-  void _onDelete(String id) {
-    final notifier = ref.read(goalsProvider.notifier);
-    final before = List<GoalModel>.from(ref.read(goalsProvider).goals);
-    final idx = before.indexWhere((g) => g.id == id);
-    if (idx < 0) return;
-    _listKey.currentState?.removeItem(
-      idx,
-      (context, animation) => _tile(before[idx], animation),
-      duration: const Duration(milliseconds: 300),
-    );
-    notifier.deleteGoal(id);
-  }
-
-  Widget _tile(GoalModel goal, Animation<double> animation) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: GoalCardWidget(
-          goal: goal,
-          onPin: () {},
-          onUnpin: () {},
-          onDelete: () {},
-        ),
-      ),
-    );
-  }
+  static const _alignDuration = Duration(milliseconds: 400);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final goals = ref.watch(goalsProvider.select((s) => s.goals));
+    final isEmpty = goals.isEmpty;
 
-    return SlidableAutoCloseBehavior(
-      child: AnimatedList(
-        key: _listKey,
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 120),
-        initialItemCount: goals.length,
-        itemBuilder: (context, index, animation) {
-          if (index >= goals.length) return const SizedBox.shrink();
-          final goal = goals[index];
-          return SizeTransition(
-            sizeFactor: animation,
-            child: FadeTransition(
-              opacity: animation,
-              child: GoalCardWidget(
-                goal: goal,
-                onPin: () => _onPin(goal.id),
-                onUnpin: () => _onUnpin(goal.id),
-                onDelete: () => _onDelete(goal.id),
-              ),
+    return Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: isEmpty
+              ? const SizedBox.expand()
+              : SlidableAutoCloseBehavior(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 140),
+                    itemCount: goals.length,
+                    itemBuilder: (_, index) {
+                      final goal = goals[index];
+                      return GoalCardWidget(
+                        goal: goal,
+                        onPin: () =>
+                            ref.read(goalsProvider.notifier).pinGoal(goal.id),
+                        onUnpin: () =>
+                            ref.read(goalsProvider.notifier).unpinGoal(goal.id),
+                        onDelete: () => ref
+                            .read(goalsProvider.notifier)
+                            .deleteGoal(goal.id),
+                      );
+                    },
+                  ),
+                ),
+        ),
+        AnimatedAlign(
+          duration: _alignDuration,
+          curve: Curves.easeInOutCubic,
+          alignment: isEmpty ? Alignment.topCenter : Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: isEmpty ? 6 : 0,
+              bottom: isEmpty ? 0 : 100,
             ),
-          );
-        },
-      ),
+            child: _PremiumCircularAddButton(
+              onPressed: () => showAddSavingGoalSheet(context),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

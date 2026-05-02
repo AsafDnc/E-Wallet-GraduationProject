@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/supabase_client_provider.dart';
 import '../../../core/network/supabase_init.dart';
+import '../../../core/providers/locale_provider.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 // ─── Profile State ────────────────────────────────────────────────────────────
 
@@ -41,11 +43,13 @@ class ProfileNotifier extends Notifier<ProfileState> {
   @override
   ProfileState build() {
     if (!supabasePluginReady) {
-      return const ProfileState(
+      return ProfileState(
         fullName: 'User',
         email: 'user@example.com',
-        currency: '₺ TRY',
-        language: 'English / Türkçe',
+        currency: '$appCurrencySymbol TRY',
+        language: appLocaleBootstrap.languageCode == 'tr'
+            ? 'Türkçe'
+            : 'English',
       );
     }
     final user = ref.read(supabaseClientProvider).auth.currentUser;
@@ -57,8 +61,8 @@ class ProfileNotifier extends Notifier<ProfileState> {
     return ProfileState(
       fullName: fullName.isEmpty ? 'User' : fullName,
       email: user?.email ?? 'user@example.com',
-      currency: '₺ TRY',
-      language: 'English / Türkçe',
+      currency: '$appCurrencySymbol TRY',
+      language: appLocaleBootstrap.languageCode == 'tr' ? 'Türkçe' : 'English',
     );
   }
 
@@ -67,6 +71,11 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   void updateLanguage(String language) =>
       state = state.copyWith(language: language);
+
+  /// Updates the displayed full name everywhere (Profile header, Home greeting, etc.).
+  void updateFullName(String fullName) {
+    state = state.copyWith(fullName: fullName.trim());
+  }
 }
 
 final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(

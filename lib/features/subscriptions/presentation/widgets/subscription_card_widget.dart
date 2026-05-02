@@ -73,7 +73,7 @@ class SubscriptionCardWidget extends StatelessWidget {
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: subscription.priceDollarsText,
+                            text: subscription.formattedMonthlyPrice,
                             style: TextStyle(
                               color: cs.onSurface,
                               fontSize: 16,
