@@ -10,14 +10,12 @@ import '../../wallets/presentation/providers/wallet_providers.dart';
 /// Encapsulates all data displayed on the Home screen.
 class HomeState {
   const HomeState({
-    required this.userName,
     required this.balance,
     required this.balanceChangePercent,
     required this.isBalanceVisible,
     required this.spendingFlowData,
   });
 
-  final String userName;
   final double balance;
 
   /// Percentage change displayed next to the balance badge (e.g. 5.2).
@@ -30,14 +28,12 @@ class HomeState {
   final List<(int, double)> spendingFlowData;
 
   HomeState copyWith({
-    String? userName,
     double? balance,
     double? balanceChangePercent,
     bool? isBalanceVisible,
     List<(int, double)>? spendingFlowData,
   }) {
     return HomeState(
-      userName: userName ?? this.userName,
       balance: balance ?? this.balance,
       balanceChangePercent: balanceChangePercent ?? this.balanceChangePercent,
       isBalanceVisible: isBalanceVisible ?? this.isBalanceVisible,
@@ -66,7 +62,6 @@ class HomeNotifier extends Notifier<HomeState> {
     });
 
     return HomeState(
-      userName: 'User',
       balance: initialSum,
       balanceChangePercent: 5.2,
       isBalanceVisible: true,

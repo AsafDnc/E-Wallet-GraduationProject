@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
+
 class TwoFactorAuthScreen extends StatelessWidget {
   const TwoFactorAuthScreen({super.key});
 
   void _showComingSoon(BuildContext context, String method) {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$method setup coming soon'),
+        content: Text(
+          l10n.twoFactorSetupSoon(method),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -15,6 +22,7 @@ class TwoFactorAuthScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -28,9 +36,9 @@ class TwoFactorAuthScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Two-Factor Authentication',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          l10n.security2fa,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: ListView(
@@ -72,7 +80,7 @@ class TwoFactorAuthScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Add an Extra Layer of Security',
+                        l10n.twoFactorMarketingHeadline,
                         style: tt.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: cs.onSurface,
@@ -80,9 +88,7 @@ class TwoFactorAuthScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Two-factor authentication (2FA) adds a second '
-                        'verification step when signing in. Even if your '
-                        'password is compromised, your account stays protected.',
+                        l10n.twoFactorMarketingBody,
                         style: tt.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                           height: 1.5,
@@ -98,7 +104,7 @@ class TwoFactorAuthScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           Text(
-            'Choose a Method',
+            l10n.twoFactorChooseMethodLabel,
             style: tt.titleSmall?.copyWith(
               color: cs.primary,
               fontWeight: FontWeight.w600,
@@ -111,12 +117,13 @@ class TwoFactorAuthScreen extends StatelessWidget {
           _AuthMethodTile(
             icon: Icons.qr_code_scanner_rounded,
             iconColor: cs.primary,
-            title: 'Authenticator App',
-            subtitle: 'e.g. Google Authenticator, Authy',
-            status: 'Not Configured',
+            title: l10n.twoFactorAuthenticatorTitle,
+            subtitle: l10n.twoFactorAuthenticatorSubtitle,
+            status: l10n.twoFactorNotConfigured,
             statusColor: cs.onSurfaceVariant,
             badge: _RecommendedBadge(),
-            onTap: () => _showComingSoon(context, 'Authenticator App'),
+            onTap: () =>
+                _showComingSoon(context, l10n.twoFactorAuthenticatorTitle),
           ),
 
           const SizedBox(height: 10),
@@ -125,11 +132,11 @@ class TwoFactorAuthScreen extends StatelessWidget {
           _AuthMethodTile(
             icon: Icons.sms_outlined,
             iconColor: const Color(0xFF4FC3F7),
-            title: 'SMS Verification',
-            subtitle: 'Receive a code via text message',
-            status: 'Not Configured',
+            title: l10n.twoFactorSmsTitle,
+            subtitle: l10n.twoFactorSmsSubtitle,
+            status: l10n.twoFactorNotConfigured,
             statusColor: cs.onSurfaceVariant,
-            onTap: () => _showComingSoon(context, 'SMS Verification'),
+            onTap: () => _showComingSoon(context, l10n.twoFactorSmsTitle),
           ),
 
           const SizedBox(height: 24),
@@ -152,8 +159,7 @@ class TwoFactorAuthScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Once enabled, you will be asked for a verification code '
-                    'every time you sign in from a new device.',
+                    l10n.twoFactorInfoFooter,
                     style: tt.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                       height: 1.5,
@@ -276,15 +282,16 @@ class _AuthMethodTile extends StatelessWidget {
 class _RecommendedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: const Color(0xFF27AE60),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Text(
-        'Recommended',
-        style: TextStyle(
+      child: Text(
+        l10n.twoFactorRecommended,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.w700,

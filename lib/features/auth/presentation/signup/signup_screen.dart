@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../features/auth/providers/auth_provider.dart';
+import '../../../../core/l10n/auth_message_localizer.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
+import '../../data/auth_repository.dart';
+import '../otp/otp_verification_screen.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -26,9 +28,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   bool _revealPassword = false;
   bool _revealConfirmPassword = false;
+  bool _allFieldsFilled = false;
+  bool _isSigningUp = false;
 
   Timer? _errorTimer;
   static const _kErrorDuration = Duration(seconds: 3);
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in [
+      _firstNameController,
+      _lastNameController,
+      _emailController,
+      _passwordController,
+      _confirmPasswordController,
+    ]) {
+      c.addListener(_checkFields);
+    }
+  }
+
+  void _checkFields() {
+    final filled =
+        _firstNameController.text.trim().isNotEmpty &&
+        _lastNameController.text.trim().isNotEmpty &&
+        _emailController.text.trim().isNotEmpty &&
+        _passwordController.text.isNotEmpty &&
+        _confirmPasswordController.text.isNotEmpty;
+    if (filled != _allFieldsFilled) {
+      setState(() => _allFieldsFilled = filled);
+    }
+  }
 
   @override
   void dispose() {
@@ -41,6 +71,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
+  static const _kOtpSlideDuration = Duration(milliseconds: 380);
+
+  void _navigateToOtpWithSlide(String email) {
+    Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
+        transitionDuration: _kOtpSlideDuration,
+        reverseTransitionDuration: _kOtpSlideDuration,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return OtpVerificationScreen(email: email);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOutCubic,
+          );
+          final slide = Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(curved);
+          return SlideTransition(position: slide, child: child);
+        },
+      ),
+    );
+  }
+
   Future<void> _onSignUpPressed() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) {
@@ -48,26 +103,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
 
-    await ref
-        .read(authProvider.notifier)
-        .signUp(
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-
-    if (!mounted) return;
-    final authState = ref.read(authProvider);
-    if (authState.status == AuthStatus.success) {
-      context.go('/home');
-    } else if (authState.errorMessage != null) {
+    setState(() => _isSigningUp = true);
+    try {
+      await ref
+          .read(authRepositoryProvider)
+          .signUp(
+            _emailController.text.trim(),
+            _passwordController.text,
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+          );
+      if (!mounted) return;
+      _navigateToOtpWithSlide(_emailController.text.trim());
+    } on AuthRepositoryException catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authState.errorMessage!),
-          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            l10n.localizeAuthUserMessage(e.message),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isSigningUp = false);
+      }
     }
   }
 
@@ -81,8 +145,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
@@ -107,8 +169,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     setState(() => _revealConfirmPassword = true),
                 onConfirmPasswordEyeUp: () =>
                     setState(() => _revealConfirmPassword = false),
-                isLoading: authState.isLoading,
-                onSignUpPressed: _onSignUpPressed,
+                isLoading: _isSigningUp,
+                // Button is only active when all fields have text.
+                onSignUpPressed: _allFieldsFilled ? _onSignUpPressed : null,
               ),
             ),
           ],
@@ -125,6 +188,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 class _SignUpHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -132,7 +196,7 @@ class _SignUpHeader extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              onPressed: () => context.pop(),
+              onPressed: () => Navigator.of(context).maybePop(),
               icon: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
               splashRadius: 24,
             ),
@@ -140,13 +204,16 @@ class _SignUpHeader extends StatelessWidget {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 48),
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
-                      letterSpacing: 0.3,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      l10n.signUpTitle,
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
                 ),
@@ -194,12 +261,15 @@ class _SignUpFormSection extends StatelessWidget {
   final VoidCallback onConfirmPasswordEyeDown;
   final VoidCallback onConfirmPasswordEyeUp;
   final bool isLoading;
-  final VoidCallback onSignUpPressed;
+
+  /// Null when not all fields are filled — disables the button.
+  final VoidCallback? onSignUpPressed;
 
   static const _darkBg = Color(0xFF121417);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -219,53 +289,53 @@ class _SignUpFormSection extends StatelessWidget {
             children: [
               const SizedBox(height: 32),
               CustomTextField(
-                label: 'First Name',
-                hintText: 'Jimmy',
+                label: l10n.fieldFirstName,
+                hintText: l10n.hintFirstNameExample,
                 controller: firstNameController,
                 keyboardType: TextInputType.name,
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your first name';
+                    return l10n.validationFirstNameRequired;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 22),
               CustomTextField(
-                label: 'Last Name',
-                hintText: 'Cook',
+                label: l10n.fieldLastName,
+                hintText: l10n.hintLastNameExample,
                 controller: lastNameController,
                 keyboardType: TextInputType.name,
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your last name';
+                    return l10n.validationLastNameRequired;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 22),
               CustomTextField(
-                label: 'Email',
-                hintText: 'example@gmail.com',
+                label: l10n.fieldEmail,
+                hintText: l10n.hintEmailExample,
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.validationEmailRequired;
                   }
                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
-                    return 'Please enter a valid email';
+                    return l10n.validationEmailInvalid;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 22),
               CustomTextField(
-                label: 'Password',
-                hintText: '* * * * * * * * *',
+                label: l10n.fieldPassword,
+                hintText: l10n.hintPasswordDots,
                 controller: passwordController,
                 obscureText: !revealPassword,
                 textInputAction: TextInputAction.next,
@@ -283,18 +353,18 @@ class _SignUpFormSection extends StatelessWidget {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
+                    return l10n.validationSignupPasswordEmpty;
                   }
                   if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                    return l10n.validationPasswordMin;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 22),
               CustomTextField(
-                label: 'Confirm Password',
-                hintText: '* * * * * * * * *',
+                label: l10n.fieldConfirmPassword,
+                hintText: l10n.hintPasswordDots,
                 controller: confirmPasswordController,
                 obscureText: !revealConfirmPassword,
                 textInputAction: TextInputAction.done,
@@ -312,17 +382,17 @@ class _SignUpFormSection extends StatelessWidget {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
+                    return l10n.validationConfirmPasswordRequired;
                   }
                   if (value != passwordController.text) {
-                    return 'Passwords do not match';
+                    return l10n.validationPasswordsMismatch;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 32),
               CustomButton(
-                label: 'Sign Up',
+                label: l10n.signUpButton,
                 onPressed: onSignUpPressed,
                 isLoading: isLoading,
               ),
@@ -343,19 +413,20 @@ class _SignUpFormSection extends StatelessWidget {
 class _SignInPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
-      onTap: () => context.pop(),
+      onTap: () => Navigator.of(context).maybePop(),
       child: Text.rich(
         TextSpan(
-          text: 'Already have an account? ',
+          text: l10n.signUpAlreadyHaveAccount,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 13,
           ),
-          children: const [
+          children: [
             TextSpan(
-              text: 'Sign In',
-              style: TextStyle(
+              text: l10n.signUpSignInAction,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.underline,

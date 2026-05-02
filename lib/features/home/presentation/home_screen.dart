@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/floating_bottom_nav.dart';
 import 'widgets/ai_bot_card_widget.dart';
 import 'widgets/home_header_widget.dart';
@@ -76,11 +77,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Loading…',
+                      AppLocalizations.of(context)!.homeLoading,
                       style: TextStyle(
                         color: cs.onSurfaceVariant,
                         fontSize: 13,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/auth_message_localizer.dart';
 import '../../../../features/auth/providers/auth_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 
@@ -55,9 +57,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (authState.status == AuthStatus.success) {
       context.go('/home');
     } else if (authState.errorMessage != null) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authState.errorMessage!),
+          content: Text(
+            l10n.localizeAuthUserMessage(authState.errorMessage!),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -111,29 +118,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 class _WelcomeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.only(top: 40, bottom: 32),
         child: Column(
-          children: const [
-            Text(
-              'Welcome',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w300,
-                color: Colors.black,
-                letterSpacing: 0.5,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                l10n.loginWelcomeTitle,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w300,
+                  color: Colors.black,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
-            SizedBox(height: 4),
-            Text(
-              'E - Wallet',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-                letterSpacing: 0.5,
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                l10n.loginBrandName,
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -172,6 +186,7 @@ class _LoginFormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -189,9 +204,9 @@ class _LoginFormSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Login',
-                style: TextStyle(
+              Text(
+                l10n.loginScreenTitle,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -200,17 +215,17 @@ class _LoginFormSection extends StatelessWidget {
               ),
               const SizedBox(height: 72),
               CustomTextField(
-                label: 'Email',
-                hintText: 'example@gmail.com',
+                label: l10n.fieldEmail,
+                hintText: l10n.hintEmailExample,
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.validationEmailRequired;
                   }
                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
-                    return 'Please enter a valid email';
+                    return l10n.validationEmailInvalid;
                   }
                   return null;
                 },
@@ -218,8 +233,8 @@ class _LoginFormSection extends StatelessWidget {
               const SizedBox(height: 16),
               // Password: hold eye icon to reveal, release to hide again.
               CustomTextField(
-                label: 'Password',
-                hintText: '* * * * * * * * *',
+                label: l10n.fieldPassword,
+                hintText: l10n.hintPasswordDots,
                 controller: passwordController,
                 obscureText: obscurePassword,
                 textInputAction: TextInputAction.done,
@@ -237,17 +252,17 @@ class _LoginFormSection extends StatelessWidget {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return l10n.validationPasswordRequired;
                   }
                   if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                    return l10n.validationPasswordMin;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 28),
               CustomButton(
-                label: 'Login',
+                label: l10n.loginScreenTitle,
                 onPressed: onLoginPressed,
                 isLoading: isLoading,
               ),
@@ -272,6 +287,7 @@ class _LoginFormSection extends StatelessWidget {
 class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -283,7 +299,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            'or',
+            l10n.loginOrDivider,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 13,
@@ -345,19 +361,20 @@ class _SocialIconButton extends StatelessWidget {
 class _SignUpPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: () => context.push('/signup'),
       child: Text.rich(
         TextSpan(
-          text: "Don't have any account ? ",
+          text: l10n.loginNoAccountPrompt,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 13,
           ),
-          children: const [
+          children: [
             TextSpan(
-              text: 'Sign Up',
-              style: TextStyle(
+              text: l10n.loginSignUpAction,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.underline,

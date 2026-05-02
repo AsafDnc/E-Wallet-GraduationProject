@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import '../../domain/models/wallet_entry_model.dart';
 import '../providers/wallet_providers.dart';
@@ -41,6 +42,7 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -125,7 +127,7 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
           // ── Edit ─────────────────────────────────────────────────────
           _ActionTile(
             icon: Icons.edit_outlined,
-            label: 'Edit Wallet',
+            label: l10n.walletActionEdit,
             cs: cs,
             onTap: () {
               final nav = Navigator.of(context, rootNavigator: true);
@@ -160,12 +162,19 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Set as Default', style: tt.bodyLarge),
                       Text(
-                        'Use for quick transactions',
+                        l10n.walletActionSetDefault,
+                        style: tt.bodyLarge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        l10n.walletActionSetDefaultSubtitle,
                         style: tt.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -189,7 +198,7 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
           // ── Adjust Balance ────────────────────────────────────────────
           _ActionTile(
             icon: Icons.tune_rounded,
-            label: 'Adjust Balance',
+            label: l10n.coreAdjustBalance,
             cs: cs,
             onTap: () {
               final nav = Navigator.of(context, rootNavigator: true);
@@ -209,7 +218,7 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
           // ── Delete (red) ──────────────────────────────────────────────
           _ActionTile(
             icon: Icons.delete_outline_rounded,
-            label: 'Delete Wallet',
+            label: l10n.walletActionDelete,
             cs: cs,
             color: cs.error,
             onTap: () => _confirmDelete(context, ref),
@@ -234,16 +243,15 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
     showDialog<void>(
       context: context,
       builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
         final cs = Theme.of(ctx).colorScheme;
         return AlertDialog(
-          title: const Text('Delete Wallet'),
-          content: Text(
-            'Delete "${widget.wallet.name}"? This cannot be undone.',
-          ),
+          title: Text(l10n.walletDeleteConfirmTitle),
+          content: Text(l10n.walletDeleteConfirmBody(widget.wallet.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             TextButton(
               style: TextButton.styleFrom(foregroundColor: cs.error),
@@ -253,7 +261,7 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
                     .deleteWallet(widget.wallet.id);
                 Navigator.of(ctx).pop();
               },
-              child: const Text('Delete'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         );
@@ -272,6 +280,7 @@ void _showEditSheet(BuildContext context, WidgetRef ref, WalletEntry wallet) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx)!;
       final cs = Theme.of(ctx).colorScheme;
       return Padding(
         padding: EdgeInsets.fromLTRB(
@@ -302,7 +311,7 @@ void _showEditSheet(BuildContext context, WidgetRef ref, WalletEntry wallet) {
                 ),
               ),
               Text(
-                'Edit Wallet',
+                l10n.walletEditTitle,
                 style: Theme.of(
                   ctx,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -311,7 +320,7 @@ void _showEditSheet(BuildContext context, WidgetRef ref, WalletEntry wallet) {
               TextField(
                 controller: nameCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Wallet Name',
+                  labelText: l10n.fieldWalletName,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -328,7 +337,7 @@ void _showEditSheet(BuildContext context, WidgetRef ref, WalletEntry wallet) {
                   }
                   if (ctx.mounted) ctx.pop();
                 },
-                child: const Text('Save Changes'),
+                child: Text(l10n.walletSaveChanges),
               ),
             ],
           ),
@@ -354,6 +363,7 @@ void _showAdjustBalanceSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx)!;
       final cs = Theme.of(ctx).colorScheme;
       return Padding(
         padding: EdgeInsets.fromLTRB(
@@ -384,7 +394,7 @@ void _showAdjustBalanceSheet(
                 ),
               ),
               Text(
-                'Adjust Balance',
+                l10n.walletAdjustBalanceTitle,
                 style: Theme.of(
                   ctx,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -409,8 +419,8 @@ void _showAdjustBalanceSheet(
                   ),
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Balance (₺)',
-                  hintText: '0.00',
+                  labelText: l10n.fieldBalanceWithSymbol(appCurrencySymbol),
+                  hintText: l10n.hintAmountZero,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -430,7 +440,7 @@ void _showAdjustBalanceSheet(
                   }
                   if (ctx.mounted) ctx.pop();
                 },
-                child: const Text('Update Balance'),
+                child: Text(l10n.walletUpdateBalance),
               ),
             ],
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/app_localizations.dart';
+
 class GoalsTabWidget extends StatelessWidget {
   const GoalsTabWidget({
     super.key,
@@ -12,6 +14,7 @@ class GoalsTabWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
@@ -21,13 +24,13 @@ class GoalsTabWidget extends StatelessWidget {
       child: Row(
         children: [
           _TabItem(
-            label: 'Goals',
+            label: l10n.goalsTabGoals,
             active: isGoalsActive,
             onTap: () => onChanged(true),
           ),
           const SizedBox(width: 28),
           _TabItem(
-            label: 'Achieved',
+            label: l10n.goalsTabAchieved,
             active: !isGoalsActive,
             onTap: () => onChanged(false),
           ),
@@ -56,12 +59,18 @@ class _TabItem extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: active ? Colors.white : const Color(0xFF858A95),
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: active ? Colors.white : const Color(0xFF858A95),
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(height: 8),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/currency_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../providers/budget_providers.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
@@ -49,6 +50,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final settings = ref.watch(budgetSettingsProvider);
     final spent = ref.watch(currentMonthSpendingProvider);
@@ -71,9 +73,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Monthly Budget',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          l10n.budgetScreenTitle,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: ListView(
@@ -88,7 +90,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Monthly Limit',
+                        l10n.budgetMonthlyLimit,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
@@ -97,7 +99,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       TextButton.icon(
                         onPressed: () => setState(() => _editingLimit = true),
                         icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: const Text('Edit'),
+                        label: Text(l10n.commonEdit),
                         style: TextButton.styleFrom(
                           foregroundColor: cs.primary,
                           visualDensity: VisualDensity.compact,
@@ -126,8 +128,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                   ),
                                 ],
                                 decoration: InputDecoration(
-                                  prefixText: '₺ ',
-                                  labelText: 'Monthly Limit',
+                                  prefixText: appCurrencySymbolSpaced,
+                                  labelText: l10n.budgetMonthlyLimit,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -138,7 +140,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                             const SizedBox(width: 10),
                             FilledButton(
                               onPressed: _applyLimit,
-                              child: const Text('Apply'),
+                              child: Text(l10n.commonApply),
                             ),
                           ],
                         )
@@ -155,7 +157,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                   ),
                             ),
                             Text(
-                              'per month',
+                              l10n.budgetPerMonth,
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: cs.onSurfaceVariant),
                             ),
@@ -174,7 +176,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Spending This Month',
+                  l10n.budgetSpendingThisMonth,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -202,14 +204,16 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${spent.formattedCompact} spent',
+                      l10n.budgetSpentFragment(spent.formattedCompact),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: progressColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      'of ${settings.monthlyLimit.formattedCompact}',
+                      l10n.budgetOfLimitFragment(
+                        settings.monthlyLimit.formattedCompact,
+                      ),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
@@ -231,7 +235,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Over by ${(spent - settings.monthlyLimit).formatted}',
+                              l10n.budgetOverBy(
+                                (spent - settings.monthlyLimit).formatted,
+                              ),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: cs.error,
@@ -242,7 +248,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         )
                       : Text(
                           key: const ValueKey('remaining'),
-                          '${(settings.monthlyLimit - spent).formattedCompact} remaining',
+                          l10n.budgetRemaining(
+                            (settings.monthlyLimit - spent).formattedCompact,
+                          ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: cs.onSurfaceVariant),
                         ),
@@ -259,7 +267,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Alert Settings',
+                  l10n.budgetAlertSettings,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -267,9 +275,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                 const SizedBox(height: 4),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Budget Alerts'),
+                  title: Text(l10n.budgetAlertsTitle),
                   subtitle: Text(
-                    'Warn when a new expense crosses the threshold',
+                    l10n.budgetAlertsSubtitle,
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
@@ -289,7 +297,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       Divider(color: cs.outlineVariant, height: 1),
                       const SizedBox(height: 14),
                       Text(
-                        'Alert Threshold',
+                        l10n.budgetAlertThreshold,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -320,8 +328,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Alert fires when spending + new expense ≥ '
-                        '${(settings.alertThreshold * 100).toInt()}% of limit',
+                        l10n.budgetAlertFiresWhen(
+                          (settings.alertThreshold * 100).toInt(),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),

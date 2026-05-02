@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/profile_providers.dart';
 
 class UserHeaderSection extends ConsumerWidget {
@@ -11,12 +12,12 @@ class UserHeaderSection extends ConsumerWidget {
     final profile = ref.watch(profileProvider);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         children: [
-          // ── Avatar with edit button ──────────────────────────────────────
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -41,8 +42,8 @@ class UserHeaderSection extends ConsumerWidget {
                   child: InkWell(
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Photo picker coming soon'),
+                        SnackBar(
+                          content: Text(l10n.photoPickerSoon),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -61,26 +62,32 @@ class UserHeaderSection extends ConsumerWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
-          // ── Full name ────────────────────────────────────────────────────
-          Text(
-            profile.fullName,
-            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                profile.fullName,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
           ),
-
           const SizedBox(height: 4),
-
-          // ── Email ────────────────────────────────────────────────────────
-          Text(
-            profile.email,
-            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              profile.email,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
           ),
-
           const SizedBox(height: 12),
-
-          // ── Verified badge ───────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -96,11 +103,15 @@ class UserHeaderSection extends ConsumerWidget {
                   color: cs.onPrimaryContainer,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  'Verified Account',
-                  style: tt.labelMedium?.copyWith(
-                    color: cs.onPrimaryContainer,
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    l10n.userVerifiedAccount,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.labelMedium?.copyWith(
+                      color: cs.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

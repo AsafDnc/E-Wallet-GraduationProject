@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/supabase_client_provider.dart';
 import '../../../core/network/supabase_init.dart';
 import '../domain/goal_model.dart';
+import '../domain/goals_save_exception.dart';
 
 class GoalsState {
   const GoalsState({required this.goals});
@@ -45,14 +46,12 @@ class GoalsNotifier extends Notifier<GoalsState> {
   /// Optimistic UI: appends [model] immediately, then persists. Rolls back on failure.
   Future<void> addGoal(GoalModel model) async {
     if (!supabasePluginReady) {
-      throw Exception(
-        'Unable to save: the app is not connected to the server yet.',
-      );
+      throw const GoalsSaveException(GoalsSaveFailure.notConnected);
     }
     final client = ref.read(supabaseClientProvider);
     final user = client.auth.currentUser;
     if (user == null) {
-      throw Exception('You must be signed in to add a saving goal.');
+      throw const GoalsSaveException(GoalsSaveFailure.notSignedIn);
     }
 
     final previous = GoalsState(goals: List<GoalModel>.from(state.goals));
@@ -61,9 +60,9 @@ class GoalsNotifier extends Notifier<GoalsState> {
     try {
       final row = <String, dynamic>{...model.toJson(), 'user_id': user.id};
       await client.from('saving_goals').insert(row);
-    } catch (e) {
+    } catch (_) {
       state = previous;
-      throw Exception(e.toString());
+      throw const GoalsSaveException(GoalsSaveFailure.persistFailed);
     }
   }
 

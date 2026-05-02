@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/show_language_picker.dart';
 import '../../../../core/providers/theme_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/profile_providers.dart';
 import 'profile_section_title.dart';
 
@@ -12,6 +14,7 @@ class PreferencesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
     final profile = ref.watch(profileProvider);
     final isNotificationsEnabled = ref.watch(notificationsProvider);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
@@ -19,35 +22,23 @@ class PreferencesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ProfileSectionTitle(title: 'Preferences'),
+        ProfileSectionTitle(title: l10n.sectionPreferences),
         _CardWrapper(
           children: [
-            // ── Currency ───────────────────────────────────────────────────
             ListTile(
               leading: _LeadingIcon(
                 icon: Icons.currency_exchange_rounded,
                 cs: cs,
               ),
-              title: const Text('Currency'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    profile.currency,
-                    style: tt.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                ],
+              title: Text(
+                l10n.preferencesCurrency,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
+              trailing: _TrailingValue(text: profile.currency, cs: cs, tt: tt),
               onTap: () {},
             ),
             _InternalDivider(),
-
-            // ── Appearance (dark mode toggle) ──────────────────────────────
             ListTile(
               leading: _LeadingIcon(
                 icon: isDarkMode
@@ -55,9 +46,15 @@ class PreferencesSection extends ConsumerWidget {
                     : Icons.light_mode_outlined,
                 cs: cs,
               ),
-              title: const Text('Appearance'),
+              title: Text(
+                l10n.preferencesAppearance,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                isDarkMode ? 'Dark Mode' : 'Light Mode',
+                isDarkMode ? l10n.appearanceDark : l10n.appearanceLight,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Switch(
@@ -67,13 +64,17 @@ class PreferencesSection extends ConsumerWidget {
               ),
             ),
             _InternalDivider(),
-
-            // ── Notifications ─────────────────────────────────────────────
             ListTile(
               leading: _LeadingIcon(icon: Icons.notifications_outlined, cs: cs),
-              title: const Text('Notifications'),
+              title: Text(
+                l10n.preferencesNotifications,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                'Spending & budget alerts',
+                l10n.preferencesNotificationsSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               trailing: Switch(
@@ -84,26 +85,16 @@ class PreferencesSection extends ConsumerWidget {
               ),
             ),
             _InternalDivider(),
-
-            // ── Language ──────────────────────────────────────────────────
             ListTile(
               leading: _LeadingIcon(icon: Icons.language_rounded, cs: cs),
-              title: const Text('Language'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    profile.language,
-                    style: tt.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                ],
+              title: Text(
+                l10n.preferencesLanguage,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              onTap: () {},
+              trailing: _TrailingValue(text: profile.language, cs: cs, tt: tt),
+              onTap: () =>
+                  showCupertinoLanguagePicker(context: context, ref: ref),
             ),
           ],
         ),
@@ -112,7 +103,46 @@ class PreferencesSection extends ConsumerWidget {
   }
 }
 
-// ─── Shared sub-widgets ───────────────────────────────────────────────────────
+class _TrailingValue extends StatelessWidget {
+  const _TrailingValue({
+    required this.text,
+    required this.cs,
+    required this.tt,
+  });
+
+  final String text;
+  final ColorScheme cs;
+  final TextTheme tt;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 140),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                text,
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+}
 
 class _CardWrapper extends StatelessWidget {
   const _CardWrapper({required this.children});

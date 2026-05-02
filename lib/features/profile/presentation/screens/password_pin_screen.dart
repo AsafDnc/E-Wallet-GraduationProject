@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/profile_providers.dart';
 
 class PasswordPinScreen extends ConsumerWidget {
@@ -9,6 +10,7 @@ class PasswordPinScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final requirePin = ref.watch(requirePinProvider);
@@ -23,9 +25,9 @@ class PasswordPinScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Password & PIN',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          l10n.passwordPinTitle,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: ListView(
@@ -36,7 +38,7 @@ class PasswordPinScreen extends ConsumerWidget {
             children: [
               _SectionHeader(
                 icon: Icons.pin_outlined,
-                title: 'App PIN',
+                title: l10n.passwordPinAppPin,
                 cs: cs,
                 tt: tt,
               ),
@@ -49,12 +51,12 @@ class PasswordPinScreen extends ConsumerWidget {
                   cs: cs,
                   color: cs.primary,
                 ),
-                title: const Text(
-                  'Change PIN',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                title: Text(
+                  l10n.passwordChangePin,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
-                  'Update your 6-digit security PIN',
+                  l10n.passwordChangePinSubtitle,
                   style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                 ),
                 trailing: Icon(
@@ -62,9 +64,9 @@ class PasswordPinScreen extends ConsumerWidget {
                   color: cs.onSurfaceVariant,
                 ),
                 onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('PIN change coming soon'),
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: Text(l10n.passwordPinChangeSoon),
+                    duration: const Duration(seconds: 2),
                   ),
                 ),
               ),
@@ -84,14 +86,14 @@ class PasswordPinScreen extends ConsumerWidget {
                   cs: cs,
                   color: requirePin ? cs.primary : cs.onSurfaceVariant,
                 ),
-                title: const Text(
-                  'Require PIN on App Launch',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                title: Text(
+                  l10n.passwordRequirePinOnLaunch,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   requirePin
-                      ? 'App is protected — PIN required to open'
-                      : 'App lock is disabled',
+                      ? l10n.passwordRequirePinProtected
+                      : l10n.passwordRequirePinDisabled,
                   style: tt.bodySmall?.copyWith(
                     color: requirePin
                         ? const Color(0xFF27AE60)
@@ -126,7 +128,7 @@ class PasswordPinScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Security Tip',
+                        l10n.passwordSecurityTipTitle,
                         style: tt.labelMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w700,
@@ -134,8 +136,7 @@ class PasswordPinScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'We recommend keeping PIN protection enabled at all '
-                        'times to prevent unauthorized access to your wallet.',
+                        l10n.passwordSecurityTipBody,
                         style: tt.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),
@@ -164,12 +165,15 @@ class PasswordPinScreen extends ConsumerWidget {
       barrierDismissible: false,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
+        final l10n = AppLocalizations.of(ctx)!;
         return AlertDialog(
           icon: Icon(Icons.security_rounded, color: cs.error, size: 36),
-          title: const Text('Security Warning', textAlign: TextAlign.center),
-          content: const Text(
-            'Disabling the app lock makes your wallet vulnerable to '
-            'unauthorized access. We highly recommend keeping this enabled.',
+          title: Text(
+            l10n.passwordDisableLockDialogTitle,
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            l10n.passwordDisableLockDialogBody,
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.spaceEvenly,
@@ -177,7 +181,7 @@ class PasswordPinScreen extends ConsumerWidget {
             // Safe action — keeps switch TRUE.
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             // Danger action — changes switch to FALSE.
             TextButton(
@@ -186,9 +190,9 @@ class PasswordPinScreen extends ConsumerWidget {
                 Navigator.of(ctx).pop();
                 ref.read(requirePinProvider.notifier).set(false);
               },
-              child: const Text(
-                'Disable Anyway',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              child: Text(
+                l10n.passwordDisableAnyway,
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
           ],

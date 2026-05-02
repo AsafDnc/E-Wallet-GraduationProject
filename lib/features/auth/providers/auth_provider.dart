@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/supabase_client_provider.dart';
 import '../../../core/network/supabase_init.dart';
+import '../domain/auth_user_message.dart';
 
 enum AuthStatus { idle, loading, success, error }
 
@@ -45,8 +46,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (!supabasePluginReady) {
       state = const AuthState(
         status: AuthStatus.error,
-        errorMessage:
-            'Unable to reach the server. Check your connection and try again.',
+        errorMessage: AuthUserMessage.serverUnreachable,
       );
       return;
     }
@@ -61,7 +61,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = const AuthState(
         status: AuthStatus.error,
-        errorMessage: 'An unexpected error occurred. Please try again.',
+        errorMessage: AuthUserMessage.unexpectedError,
       );
     }
   }
@@ -75,8 +75,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (!supabasePluginReady) {
       state = const AuthState(
         status: AuthStatus.error,
-        errorMessage:
-            'Unable to reach the server. Check your connection and try again.',
+        errorMessage: AuthUserMessage.serverUnreachable,
       );
       return;
     }
@@ -95,7 +94,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = const AuthState(
         status: AuthStatus.error,
-        errorMessage: 'An unexpected error occurred. Please try again.',
+        errorMessage: AuthUserMessage.unexpectedError,
       );
     }
   }
@@ -116,7 +115,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = const AuthState(
         status: AuthStatus.error,
-        errorMessage: 'Sign out failed. Please try again.',
+        errorMessage: AuthUserMessage.signOutFailed,
       );
     }
   }

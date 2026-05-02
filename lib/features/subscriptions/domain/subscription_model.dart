@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/currency_formatter.dart';
+
 /// Single subscription row for list and home widgets.
 ///
 /// Backed by Supabase table `subscriptions`:
@@ -25,7 +27,7 @@ class SubscriptionModel {
   /// Compact uppercase label for the home horizontal cards.
   final String shortNameUppercase;
 
-  /// Monthly charge in USD.
+  /// Monthly charge in app currency (TRY).
   final double monthlyPrice;
 
   /// Days until the next billing date (derived for UI).
@@ -47,9 +49,9 @@ class SubscriptionModel {
     return 1 - (remaining / billingCycleDays);
   }
 
-  String get priceDollarsText => '\$${monthlyPrice.toStringAsFixed(2)}';
+  String get formattedMonthlyPrice => monthlyPrice.toAppCurrency();
 
-  String get homePriceLine => '$priceDollarsText/mo';
+  String get homePriceLine => '$formattedMonthlyPrice/mo';
 
   SubscriptionModel copyWith({
     String? id,

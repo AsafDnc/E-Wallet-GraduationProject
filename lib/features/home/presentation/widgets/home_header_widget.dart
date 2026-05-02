@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/utils/currency_formatter.dart';
+import '../../../../../core/utils/greeting_utils.dart';
+import '../../../../../l10n/app_localizations.dart';
+import '../../../profile/providers/profile_providers.dart';
 import '../../providers/home_provider.dart';
 
 /// Displays the top section of the Home screen:
-///   - Greeting text ("Good Morning, User")
+///   - Greeting text (time-based + first name from [profileProvider])
 ///   - Balance row: large dollar amount + percent badge + visibility toggle
 ///   - Trailing CircleAvatar for the user profile photo
 class HomeHeaderWidget extends ConsumerWidget {
@@ -14,10 +17,10 @@ class HomeHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final fullName = ref.watch(profileProvider.select((p) => p.fullName));
     final header = ref.watch(
       homeProvider.select(
-        (s) =>
-            (s.userName, s.balance, s.balanceChangePercent, s.isBalanceVisible),
+        (s) => (s.balance, s.balanceChangePercent, s.isBalanceVisible),
       ),
     );
 
@@ -28,12 +31,12 @@ class HomeHeaderWidget extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _GreetingText(userName: header.$1),
+              _GreetingText(fullName: fullName),
               const SizedBox(height: 6),
               _BalanceRow(
-                balance: header.$2,
-                changePercent: header.$3,
-                isVisible: header.$4,
+                balance: header.$1,
+                changePercent: header.$2,
+                isVisible: header.$3,
                 onToggleVisibility: () =>
                     ref.read(homeProvider.notifier).toggleBalanceVisibility(),
               ),
@@ -52,14 +55,20 @@ class HomeHeaderWidget extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _GreetingText extends StatelessWidget {
-  const _GreetingText({required this.userName});
+  const _GreetingText({required this.fullName});
 
-  final String userName;
+  /// Reactive [ProfileState.fullName] from [profileProvider] (trimmed upstream).
+  final String fullName;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final phrase = localizedGreetingPhrase(l10n);
+    final first = firstNameFromFullName(fullName, l10n.defaultUserFirstName);
     return Text(
-      'Good Morning, $userName',
+      '$phrase, $first',
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontSize: 16,
@@ -128,7 +137,9 @@ class _BalanceRowState extends State<_BalanceRow> {
               ),
               // Visible layer: real balance or masked.
               Text(
-                widget.isVisible ? formatted : '₺ ${'*' * _digitsOnly.length}',
+                widget.isVisible
+                    ? formatted
+                    : '$appCurrencySymbolSpaced${'*' * _digitsOnly.length}',
                 style: themedBalanceStyle,
                 maxLines: 1,
                 overflow: TextOverflow.clip,

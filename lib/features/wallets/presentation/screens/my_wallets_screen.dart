@@ -3,8 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/models/wallet_entry_model.dart';
 import '../providers/wallet_providers.dart';
+import '../utils/wallet_type_l10n.dart';
 import '../widgets/total_balance_card.dart';
 import '../widgets/wallet_action_bottom_sheet.dart';
 import '../widgets/wallet_list_item.dart';
@@ -14,6 +17,7 @@ class MyWalletsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final wallets = ref.watch(walletsProvider);
 
@@ -38,11 +42,15 @@ class MyWalletsScreen extends ConsumerWidget {
                     onPressed: () => context.pop(),
                   )
                 : null,
-            title: Text(
-              'My Wallets',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            title: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                l10n.myWalletsTitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
 
@@ -54,7 +62,7 @@ class MyWalletsScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
-                'All Accounts',
+                l10n.walletsAllAccountsSection,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -87,9 +95,9 @@ class MyWalletsScreen extends ConsumerWidget {
         backgroundColor: cs.primaryContainer,
         foregroundColor: cs.onPrimaryContainer,
         icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add Wallet',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        label: Text(
+          l10n.walletsAddWallet,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -126,6 +134,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -160,7 +169,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
             ),
 
             Text(
-              'Add Wallet',
+              l10n.walletsAddWallet,
               style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 20),
@@ -169,8 +178,8 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
             TextField(
               controller: _nameCtrl,
               decoration: InputDecoration(
-                labelText: 'Wallet Name',
-                hintText: 'e.g. Vacation Savings',
+                labelText: l10n.fieldWalletName,
+                hintText: l10n.hintWalletNameExample,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -189,7 +198,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
                 FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d{0,2}')),
               ],
               decoration: InputDecoration(
-                labelText: 'Initial Balance (₺)',
+                labelText: l10n.fieldInitialBalance(appCurrencySymbol),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -200,7 +209,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
 
             // ── Type selector ─────────────────────────────────────────
             Text(
-              'Account Type',
+              l10n.fieldAccountType,
               style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
@@ -235,8 +244,10 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              type.label,
+                              walletTypeDisplayName(l10n, type),
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: selected
@@ -275,7 +286,7 @@ class _AddWalletSheetState extends ConsumerState<_AddWalletSheet> {
                 ref.read(walletsProvider.notifier).addWallet(newWallet);
                 Navigator.of(context).pop();
               },
-              child: const Text('Add Wallet'),
+              child: Text(l10n.walletsAddWallet),
             ),
           ],
         ),

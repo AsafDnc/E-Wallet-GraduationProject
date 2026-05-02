@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/currency_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../providers/goals_provider.dart';
 import '../../subscriptions/presentation/widgets/subscriptions_goals_add_sheets.dart';
 import 'widgets/goal_card_widget.dart';
@@ -41,6 +43,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final goals = ref.watch(goalsProvider.select((s) => s.goals));
     final savedTotal = goals.fold<int>(0, (s, g) => s + g.savedAmount);
     final targetTotal = goals.fold<int>(0, (s, g) => s + g.targetAmount);
@@ -63,13 +66,16 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   ),
                   Expanded(
                     child: Center(
-                      child: Text(
-                        'Saving Goals',
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.15,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          l10n.savingGoalsTab,
+                          style: TextStyle(
+                            color: cs.onSurfaceVariant,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.15,
+                          ),
                         ),
                       ),
                     ),
@@ -95,7 +101,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   TextSpan(
                     children: [
                       TextSpan(
-                        text: '\$${_fmt(savedTotal)} ',
+                        text: '$appCurrencySymbolSpaced${_fmt(savedTotal)} ',
                         style: TextStyle(
                           color: cs.onSurface,
                           fontSize: 30,
@@ -105,7 +111,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                       ),
                       TextSpan(
-                        text: '/ \$${_fmt(targetTotal)}',
+                        text: '/ $appCurrencySymbolSpaced${_fmt(targetTotal)}',
                         style: TextStyle(
                           color: cs.onSurfaceVariant,
                           fontSize: 15,

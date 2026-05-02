@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_init.dart';
 
 import '../../features/auth/presentation/login/login_screen.dart';
+import '../../features/auth/presentation/otp/otp_verification_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
 import '../../features/budget/presentation/budget_screen.dart';
 import '../../features/categories/presentation/categories_screen.dart';
@@ -86,6 +87,15 @@ CustomTransitionPage<void> _horizontalPushPage({
   );
 }
 
+/// iOS-style push with interactive edge-swipe-to-pop. Used only for nested app
+/// routes (not [AppShellScreen] on `/home` or auth flows).
+CupertinoPage<void> _cupertinoNestedPage({
+  required LocalKey pageKey,
+  required Widget child,
+}) {
+  return CupertinoPage<void>(key: pageKey, child: child);
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _AuthStateRefreshNotifier();
   ref.onDispose(refreshNotifier.dispose);
@@ -97,13 +107,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = _hasSupabaseSession();
       final isAuthRoute =
           state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup';
+          state.matchedLocation == '/signup' ||
+          state.matchedLocation == '/otp';
 
       if (!isLoggedIn && !isAuthRoute) return '/login';
       if (isLoggedIn && isAuthRoute) return '/home';
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/otp',
+        pageBuilder: (context, state) {
+          final email = (state.extra as String?) ?? '';
+          return _horizontalPushPage(
+            pageKey: state.pageKey,
+            child: OtpVerificationScreen(email: email),
+          );
+        },
+      ),
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => _horizontalPushPage(
@@ -127,14 +148,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/profile',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const ProfileScreen(),
         ),
       ),
       GoRoute(
         path: '/wallets',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const MyWalletsScreen(),
         ),
@@ -150,49 +171,49 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/budget',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const BudgetScreen(),
         ),
       ),
       GoRoute(
         path: '/categories',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const CategoriesScreen(),
         ),
       ),
       GoRoute(
         path: '/wallet',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const WalletScreen(),
         ),
       ),
       GoRoute(
         path: '/security/personal-info',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const PersonalInfoScreen(),
         ),
       ),
       GoRoute(
         path: '/security/password-pin',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const PasswordPinScreen(),
         ),
       ),
       GoRoute(
         path: '/security/2fa',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const TwoFactorAuthScreen(),
         ),
       ),
       GoRoute(
         path: '/security/daily-limits',
-        pageBuilder: (context, state) => _horizontalPushPage(
+        pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const DailyLimitsScreen(),
         ),

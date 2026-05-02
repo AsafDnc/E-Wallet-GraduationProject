@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 /// First step: scan vs manual entry. Shown from the center + nav action.
 class EntrySelectionBottomSheet extends StatelessWidget {
   const EntrySelectionBottomSheet({super.key, required this.onManualEntry});
@@ -13,6 +15,7 @@ class EntrySelectionBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.viewPaddingOf(context).bottom,
@@ -45,12 +48,12 @@ class EntrySelectionBottomSheet extends StatelessWidget {
                   children: [
                     _EntryCircleButton(
                       asset: 'assets/icons/Scan.svg',
-                      label: 'Scan Receipt',
+                      label: l10n.entryScanReceipt,
                       onTap: () => debugPrint('TODO: AI Scanner'),
                     ),
                     _EntryCircleButton(
                       asset: 'assets/icons/Pencil.svg',
-                      label: 'Manual Entry',
+                      label: l10n.entryManualEntry,
                       onTap: onManualEntry,
                     ),
                   ],
@@ -100,6 +103,8 @@ class _EntryCircleButton extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,

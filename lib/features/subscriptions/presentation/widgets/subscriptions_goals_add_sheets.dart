@@ -4,10 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../goals/domain/goal_model.dart';
+import '../../../goals/domain/goals_save_exception.dart';
 import '../../../goals/providers/goals_provider.dart';
 import '../../domain/subscription_model.dart';
 import '../../providers/subscriptions_provider.dart';
@@ -84,6 +88,8 @@ Widget _buildErrorBanner(ColorScheme cs, String? message) {
             Expanded(
               child: Text(
                 message,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: cs.onErrorContainer,
                   fontSize: 14,
@@ -128,15 +134,11 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
   bool _highlightPrice = false;
   bool _highlightSchedule = false;
 
-  static const _weekdayLabels = <String>[
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
+  List<String> _localizedWeekdayLabels(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final format = DateFormat.EEEE(locale.toString());
+    return List.generate(7, (i) => format.format(DateTime(2024, 1, 1 + i)));
+  }
 
   @override
   void initState() {
@@ -240,28 +242,28 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
     if (n == null) return;
     if (n < 1 || n > 31) {
       _monthlyDayCtrl.clear();
-      _showTransientOnly('Please enter a day between 1 and 31');
+      _showTransientOnly(
+        AppLocalizations.of(context)!.subscriptionErrorDayOfMonthRange,
+      );
     }
   }
 
   Future<void> _onConfirm() async {
     _clearBannerAndHighlights();
 
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameCtrl.text.trim();
     final priceRaw = double.tryParse(
       _priceCtrl.text.trim().replaceAll(',', '.'),
     );
 
     if (name.isEmpty) {
-      _showTimedFeedback('Service name cannot be empty.', name: true);
+      _showTimedFeedback(l10n.subscriptionErrorServiceNameEmpty, name: true);
       return;
     }
 
     if (_priceCtrl.text.trim().isEmpty || priceRaw == null || priceRaw <= 0) {
-      _showTimedFeedback(
-        'Please enter a valid amount greater than 0.',
-        price: true,
-      );
+      _showTimedFeedback(l10n.subscriptionErrorAmountInvalid, price: true);
       return;
     }
 
@@ -273,14 +275,14 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
       final d = int.tryParse(_monthlyDayCtrl.text.trim());
       if (_monthlyDayCtrl.text.trim().isEmpty || d == null) {
         _showTimedFeedback(
-          'Please enter a billing day (1–31).',
+          l10n.subscriptionErrorBillingDayRequired,
           schedule: true,
         );
         return;
       }
       if (d < 1 || d > 31) {
         _monthlyDayCtrl.clear();
-        _showTransientOnly('Please enter a day between 1 and 31');
+        _showTransientOnly(l10n.subscriptionErrorDayOfMonthRange);
         return;
       }
       renewalDayOfMonth = d;
@@ -293,7 +295,7 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
       final picked = _dateOnly(_yearlyRenewal);
       if (!picked.isAfter(today)) {
         _showTimedFeedback(
-          'Please choose a billing date after today.',
+          l10n.subscriptionErrorBillingDateAfterToday,
           schedule: true,
         );
         return;
@@ -330,6 +332,7 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -355,7 +358,9 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                 const _DragHandle(),
                 const SizedBox(height: 8),
                 Text(
-                  'Add subscription',
+                  l10n.subscriptionAddTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: cs.onSurface,
                     fontSize: 20,
@@ -378,7 +383,7 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                   textCapitalization: TextCapitalization.sentences,
                   decoration: _fieldDecoration(
                     context,
-                    label: 'Service / platform name',
+                    label: l10n.subscriptionFieldServiceName,
                     highlightError: _highlightName,
                   ),
                 ),
@@ -390,13 +395,17 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                   ),
                   decoration: _fieldDecoration(
                     context,
-                    label: 'Amount (per billing cycle, USD)',
+                    label: l10n.subscriptionFieldAmountPerCycle(
+                      appCurrencySymbol,
+                    ),
                     highlightError: _highlightPrice,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Billing cycle',
+                  l10n.subscriptionBillingCycleLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: cs.onSurfaceVariant,
                     fontSize: 13,
@@ -405,20 +414,29 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'weekly',
-                      label: Text('Weekly'),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(l10n.subscriptionBillingWeekly),
+                      ),
                       icon: Icon(Icons.calendar_view_week_rounded, size: 18),
                     ),
                     ButtonSegment(
                       value: 'monthly',
-                      label: Text('Monthly'),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(l10n.subscriptionBillingMonthly),
+                      ),
                       icon: Icon(Icons.calendar_month_rounded, size: 18),
                     ),
                     ButtonSegment(
                       value: 'yearly',
-                      label: Text('Yearly'),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(l10n.subscriptionBillingYearly),
+                      ),
                       icon: Icon(Icons.event_rounded, size: 18),
                     ),
                   ],
@@ -439,7 +457,7 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                   duration: const Duration(milliseconds: 220),
                   child: KeyedSubtree(
                     key: ValueKey<String>(_billingCycle),
-                    child: _buildScheduleSection(context, cs, isDark),
+                    child: _buildScheduleSection(context, cs, isDark, l10n),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -453,12 +471,12 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text('Confirm'),
+                  child: Text(l10n.commonConfirm),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
               ],
             ),
@@ -472,6 +490,7 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
     BuildContext context,
     ColorScheme cs,
     bool isDark,
+    AppLocalizations l10n,
   ) {
     final minYearly = _dateOnly(DateTime.now()).add(const Duration(days: 1));
 
@@ -481,7 +500,9 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Billing day of month',
+              l10n.subscriptionBillingDayOfMonth,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: cs.onSurfaceVariant,
                 fontSize: 13,
@@ -499,7 +520,7 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
               onChanged: _onMonthlyDayChanged,
               decoration: _fieldDecoration(
                 context,
-                label: 'Day (1–31)',
+                label: l10n.subscriptionBillingDayField,
                 highlightError: _highlightSchedule,
               ),
             ),
@@ -510,7 +531,9 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Renewal weekday',
+              l10n.subscriptionRenewalWeekday,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: cs.onSurfaceVariant,
                 fontSize: 13,
@@ -550,8 +573,16 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
                     onSelectedItemChanged: (i) {
                       setState(() => _weeklyWeekday = i + 1);
                     },
-                    children: _weekdayLabels
-                        .map((label) => Center(child: Text(label)))
+                    children: _localizedWeekdayLabels(context)
+                        .map(
+                          (label) => Center(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -564,7 +595,9 @@ class _AddSubscriptionSheetState extends ConsumerState<_AddSubscriptionSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Next billing date',
+              l10n.subscriptionNextBillingDate,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: cs.onSurfaceVariant,
                 fontSize: 13,
@@ -681,6 +714,7 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
   Future<void> _onConfirm() async {
     _clearBannerAndHighlights();
 
+    final l10n = AppLocalizations.of(context)!;
     final title = _titleCtrl.text.trim();
     final savedRaw = _savedCtrl.text.trim();
     final targetRaw = _targetCtrl.text.trim();
@@ -688,26 +722,23 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
     final target = int.tryParse(targetRaw.replaceAll(',', ''));
 
     if (title.isEmpty) {
-      _showTimedFeedback('Goal name cannot be empty.', title: true);
+      _showTimedFeedback(l10n.savingGoalErrorEmptyName, title: true);
       return;
     }
 
     if (savedRaw.isEmpty || saved == null || saved < 0) {
-      _showTimedFeedback(
-        'Please enter a valid saved amount (0 or more).',
-        saved: true,
-      );
+      _showTimedFeedback(l10n.savingGoalErrorSavedAmount, saved: true);
       return;
     }
 
     if (targetRaw.isEmpty || target == null || target <= 0) {
-      _showTimedFeedback('Target amount must be greater than 0.', target: true);
+      _showTimedFeedback(l10n.savingGoalErrorTargetAmount, target: true);
       return;
     }
 
     if (saved > target) {
       _showTimedFeedback(
-        'Target must be at least the currently saved amount.',
+        l10n.savingGoalErrorTargetVsSaved,
         saved: true,
         target: true,
       );
@@ -733,13 +764,20 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       Navigator.of(context).pop();
-    } catch (_) {
+    } on GoalsSaveException catch (e) {
       if (!mounted) return;
+      final msg = switch (e.failure) {
+        GoalsSaveFailure.notConnected => l10n.goalsErrorNotConnected,
+        GoalsSaveFailure.notSignedIn => l10n.goalsErrorSignInRequired,
+        GoalsSaveFailure.persistFailed => l10n.goalsErrorSaveFailed,
+      };
+      _showTimedFeedback(msg);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
@@ -761,7 +799,9 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
                 const _DragHandle(),
                 const SizedBox(height: 8),
                 Text(
-                  'Add saving goal',
+                  l10n.savingGoalAddTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: cs.onSurface,
                     fontSize: 20,
@@ -784,7 +824,7 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
                   textCapitalization: TextCapitalization.sentences,
                   decoration: _fieldDecoration(
                     context,
-                    label: 'Goal name',
+                    label: l10n.savingGoalFieldName,
                     highlightError: _highlightTitle,
                   ),
                 ),
@@ -794,7 +834,7 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
                   keyboardType: TextInputType.number,
                   decoration: _fieldDecoration(
                     context,
-                    label: 'Currently saved amount (USD)',
+                    label: l10n.savingGoalFieldSavedAmount(appCurrencySymbol),
                     highlightError: _highlightSaved,
                   ),
                 ),
@@ -804,7 +844,7 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
                   keyboardType: TextInputType.number,
                   decoration: _fieldDecoration(
                     context,
-                    label: 'Target amount (USD)',
+                    label: l10n.savingGoalFieldTargetAmount(appCurrencySymbol),
                     highlightError: _highlightTarget,
                   ),
                 ),
@@ -819,12 +859,12 @@ class _AddSavingGoalSheetState extends ConsumerState<_AddSavingGoalSheet> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text('Confirm'),
+                  child: Text(l10n.commonConfirm),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
               ],
             ),
