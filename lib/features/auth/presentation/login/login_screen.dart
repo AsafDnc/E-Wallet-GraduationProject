@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/auth_message_localizer.dart';
+import '../../../../core/network/auth_route_observer.dart';
 import '../../../../features/auth/providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
@@ -17,7 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> with RouteAware {
   // Swapping the key forces a fresh Form widget (clears error text) while
   // leaving the controllers — and therefore the user's input — untouched.
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -30,12 +31,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Timer? _errorTimer;
   static const _kErrorDuration = Duration(seconds: 3);
 
+  bool _routeAwareSubscribed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeAwareSubscribed) {
+      return;
+    }
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic>) {
+      authRouteObserver.subscribe(this, route);
+      _routeAwareSubscribed = true;
+    }
+  }
+
   @override
   void dispose() {
+    if (_routeAwareSubscribed) {
+      authRouteObserver.unsubscribe(this);
+    }
     _emailController.dispose();
     _passwordController.dispose();
     _errorTimer?.cancel();
     super.dispose();
+  }
+
+  /// Sign Up (and similar) is pushed on top; when it pops, iOS may restore focus
+  /// to the first text field here and reopen the keyboard. Clear focus after
+  /// the transition frame.
+  @override
+  void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
   }
 
   Future<void> _onLoginPressed() async {
@@ -187,13 +219,20 @@ class _LoginFormSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
+    const topRadius = 36.0;
+    final bottomRadius = keyboardBottom > 0 ? 14.0 : 0.0;
+
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      clipBehavior: keyboardBottom > 0 ? Clip.antiAlias : Clip.none,
+      decoration: BoxDecoration(
         color: _darkBg,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(36),
-          topRight: Radius.circular(36),
+          topLeft: const Radius.circular(topRadius),
+          topRight: const Radius.circular(topRadius),
+          bottomLeft: Radius.circular(bottomRadius),
+          bottomRight: Radius.circular(bottomRadius),
         ),
       ),
       child: SingleChildScrollView(
@@ -220,6 +259,7 @@ class _LoginFormSection extends StatelessWidget {
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
+                autofocus: false,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.validationEmailRequired;

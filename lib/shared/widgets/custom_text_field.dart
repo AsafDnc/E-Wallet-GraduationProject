@@ -7,6 +7,7 @@ class CustomTextField extends StatelessWidget {
     this.hintText,
     this.controller,
     this.obscureText = false,
+    this.autofocus = false,
     this.keyboardType,
     this.textInputAction,
     this.onChanged,
@@ -18,6 +19,7 @@ class CustomTextField extends StatelessWidget {
   final String? hintText;
   final TextEditingController? controller;
   final bool obscureText;
+  final bool autofocus;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
@@ -37,6 +39,7 @@ class CustomTextField extends StatelessWidget {
         TextFormField(
           controller: controller,
           obscureText: obscureText,
+          autofocus: autofocus,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           onChanged: onChanged,

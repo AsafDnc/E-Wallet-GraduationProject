@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_route_observer.dart';
 import 'supabase_init.dart';
 
 import '../../features/auth/presentation/login/login_screen.dart';
@@ -102,6 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: _hasSupabaseSession() ? '/home' : '/login',
+    observers: [authRouteObserver],
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
       final isLoggedIn = _hasSupabaseSession();
