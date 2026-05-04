@@ -8,6 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_route_observer.dart';
 import 'supabase_init.dart';
 
+import '../../features/app_pin/presentation/app_pin_daily_login_screen.dart';
+import '../../features/app_pin/presentation/confirm_pin_screen.dart';
+import '../../features/app_pin/presentation/create_pin_screen.dart';
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/otp/otp_verification_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
@@ -218,6 +221,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const DailyLimitsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/app-pin/create',
+        pageBuilder: (context, state) => _cupertinoNestedPage(
+          pageKey: state.pageKey,
+          child: const CreatePinScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/app-pin/confirm',
+        pageBuilder: (context, state) => _cupertinoNestedPage(
+          pageKey: state.pageKey,
+          child: const ConfirmPinScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/app-pin/daily-login',
+        pageBuilder: (context, state) => _cupertinoNestedPage(
+          pageKey: state.pageKey,
+          child: const AppPinDailyLoginScreen(),
         ),
       ),
     ],

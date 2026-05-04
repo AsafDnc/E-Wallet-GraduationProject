@@ -972,4 +972,52 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get dailyLimitsSectionTitle => 'Günlük Harcama Limiti';
+
+  @override
+  String get appPinCreateTitle => 'PIN Oluştur';
+
+  @override
+  String get appPinCreateSubtitle =>
+      'Uygulamayı güvence altına almak için 6 haneli şifrenizi girin.';
+
+  @override
+  String get appPinWarningSequential =>
+      'Basit ardışık dizilerden kaçının (ör. 123456 veya 654321).';
+
+  @override
+  String get appPinWarningRepeated => 'Aynı rakamı altı kez tekrarlamayın.';
+
+  @override
+  String get appPinConfirmTitle => 'PIN\'i Onayla';
+
+  @override
+  String get appPinEncryptedFooter =>
+      'Şifreniz şifrelenir ve güvenli şekilde saklanır.';
+
+  @override
+  String get appPinMismatch => 'PIN kodları eşleşmiyor.';
+
+  @override
+  String get appPinIncorrectPassword => 'Hatalı şifre.';
+
+  @override
+  String get appPinDailyBrand => 'E - Wallet';
+
+  @override
+  String get appPinDailyInstruction =>
+      'Devam etmek için şifrenizi girmeniz gerekir.';
+
+  @override
+  String get appPinForgotPrefix => 'Şifrenizi mi unuttunuz? ';
+
+  @override
+  String get appPinForgotAction => 'Şifreyi sıfırla';
+
+  @override
+  String appPinResetEmailSent(String email) {
+    return '$email adresine şifre sıfırlama bağlantısı gönderildi. (Demo — arka uç henüz bağlı değil.)';
+  }
+
+  @override
+  String get appPinSavedMessage => 'PIN\'iniz kaydedildi.';
 }

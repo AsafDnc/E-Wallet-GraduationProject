@@ -63,12 +63,7 @@ class PasswordPinScreen extends ConsumerWidget {
                   Icons.chevron_right_rounded,
                   color: cs.onSurfaceVariant,
                 ),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.passwordPinChangeSoon),
-                    duration: const Duration(seconds: 2),
-                  ),
-                ),
+                onTap: () => context.push('/app-pin/create'),
               ),
 
               Divider(
