@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../app_pin_screen_layout.dart';
+
 /// Flat, borderless custom numpad (0–9 + backspace). Does not open the system keyboard.
 class PinNumpad extends StatelessWidget {
   const PinNumpad({
@@ -13,6 +15,13 @@ class PinNumpad extends StatelessWidget {
 
   static const _bg = Color(0xFF121417);
 
+  static TextStyle get _digitStyle => TextStyle(
+    color: Colors.white,
+    fontSize: AppPinScreenLayout.numpadDigitFontSize,
+    fontWeight: AppPinScreenLayout.numpadDigitFontWeight,
+    height: 1.05,
+  );
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
@@ -21,16 +30,21 @@ class PinNumpad extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(12, 8, 12, 12 + bottom),
+          padding: EdgeInsets.fromLTRB(
+            AppPinScreenLayout.numpadPaddingHorizontal,
+            AppPinScreenLayout.numpadPaddingTop,
+            AppPinScreenLayout.numpadPaddingHorizontal,
+            AppPinScreenLayout.numpadPaddingBottom + bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _row(['1', '2', '3']),
-              const SizedBox(height: 6),
+              SizedBox(height: AppPinScreenLayout.numpadRowGap),
               _row(['4', '5', '6']),
-              const SizedBox(height: 6),
+              SizedBox(height: AppPinScreenLayout.numpadRowGap),
               _row(['7', '8', '9']),
-              const SizedBox(height: 6),
+              SizedBox(height: AppPinScreenLayout.numpadRowGap),
               _bottomRow(),
             ],
           ),
@@ -45,18 +59,12 @@ class PinNumpad extends StatelessWidget {
           .map(
             (d) => Expanded(
               child: _KeyCell(
+                height: AppPinScreenLayout.numpadKeyHeight,
                 onTap: () {
                   FocusManager.instance.primaryFocus?.unfocus();
                   onDigit(d);
                 },
-                child: Text(
-                  d,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                child: Text(d, style: _digitStyle),
               ),
             ),
           )
@@ -70,30 +78,25 @@ class PinNumpad extends StatelessWidget {
         const Expanded(child: SizedBox.shrink()),
         Expanded(
           child: _KeyCell(
+            height: AppPinScreenLayout.numpadKeyHeight,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
               onDigit('0');
             },
-            child: const Text(
-              '0',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text('0', style: _digitStyle),
           ),
         ),
         Expanded(
           child: _KeyCell(
+            height: AppPinScreenLayout.numpadKeyHeight,
             onTap: () {
               FocusManager.instance.primaryFocus?.unfocus();
               onBackspace();
             },
-            child: const Icon(
+            child: Icon(
               Icons.backspace_outlined,
               color: Colors.white70,
-              size: 24,
+              size: AppPinScreenLayout.numpadBackspaceIconSize,
             ),
           ),
         ),
@@ -103,8 +106,13 @@ class PinNumpad extends StatelessWidget {
 }
 
 class _KeyCell extends StatelessWidget {
-  const _KeyCell({required this.onTap, required this.child});
+  const _KeyCell({
+    required this.height,
+    required this.onTap,
+    required this.child,
+  });
 
+  final double height;
   final VoidCallback onTap;
   final Widget child;
 
@@ -117,7 +125,10 @@ class _KeyCell extends StatelessWidget {
         splashColor: Colors.white12,
         highlightColor: Colors.white10,
         borderRadius: BorderRadius.circular(12),
-        child: SizedBox(height: 52, child: Center(child: child)),
+        child: SizedBox(
+          height: height,
+          child: Center(child: child),
+        ),
       ),
     );
   }

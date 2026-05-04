@@ -99,28 +99,24 @@ class _ConfirmPinScreenState extends ConsumerState<ConfirmPinScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title: Text(
+          l10n.appPinConfirmTitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.black87,
+          ),
+        ),
+      ),
       body: Column(
         children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-              child: SizedBox(
-                height: 48,
-                child: Center(
-                  child: Text(
-                    l10n.appPinConfirmTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
           Expanded(
             child: Container(
               width: double.infinity,
@@ -134,7 +130,13 @@ class _ConfirmPinScreenState extends ConsumerState<ConfirmPinScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(
-                    height: AppPinScreenLayout.pinTopSpacingInDarkPanel,
+                    height: AppPinScreenLayout.darkPanelInnerTopPadding,
+                  ),
+                  const SizedBox(
+                    height: AppPinScreenLayout.instructionSlotHeight,
+                  ),
+                  const SizedBox(
+                    height: AppPinScreenLayout.instructionToPinGap,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -152,17 +154,19 @@ class _ConfirmPinScreenState extends ConsumerState<ConfirmPinScreen> {
                   ),
                   const SizedBox(height: AppPinScreenLayout.belowPinSpacing),
                   SizedBox(
-                    height: 22,
-                    child: AnimatedOpacity(
-                      opacity: _showMismatchText ? 1 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Text(
-                        l10n.appPinMismatch,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                    height: AppPinScreenLayout.confirmMismatchSlotHeight,
+                    child: Center(
+                      child: AnimatedOpacity(
+                        opacity: _showMismatchText ? 1 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Text(
+                          l10n.appPinMismatch,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

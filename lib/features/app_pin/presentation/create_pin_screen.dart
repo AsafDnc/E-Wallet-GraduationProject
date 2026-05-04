@@ -50,44 +50,30 @@ class _CreatePinScreenState extends ConsumerState<CreatePinScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          onPressed: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+            context.pop();
+          },
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        ),
+        title: Text(
+          l10n.appPinCreateTitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.black87,
+          ),
+        ),
+      ),
       body: Column(
         children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-              child: SizedBox(
-                height: 48,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        onPressed: () {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          context.pop();
-                        },
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      l10n.appPinCreateTitle,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
           Expanded(
             child: Container(
               width: double.infinity,
@@ -101,7 +87,32 @@ class _CreatePinScreenState extends ConsumerState<CreatePinScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(
-                    height: AppPinScreenLayout.pinTopSpacingInDarkPanel,
+                    height: AppPinScreenLayout.darkPanelInnerTopPadding,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppPinScreenLayout.pinHorizontalPadding,
+                    ),
+                    child: SizedBox(
+                      height: AppPinScreenLayout.instructionSlotHeight,
+                      width: double.infinity,
+                      child: Center(
+                        child: Text(
+                          l10n.appPinCreateSubtitle,
+                          textAlign: TextAlign.center,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.45,
+                            color: Colors.white.withValues(alpha: 0.82),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: AppPinScreenLayout.instructionToPinGap,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -122,15 +133,6 @@ class _CreatePinScreenState extends ConsumerState<CreatePinScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.appPinCreateSubtitle,
-                          style: TextStyle(
-                            fontSize: 15,
-                            height: 1.45,
-                            color: Colors.white.withValues(alpha: 0.78),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
                         _PinHintBullet(
                           text: l10n.appPinWarningSequential,
                           bulletColor: Colors.white.withValues(alpha: 0.55),
