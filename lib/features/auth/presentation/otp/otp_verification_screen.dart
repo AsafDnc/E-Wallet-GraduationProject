@@ -8,6 +8,7 @@ import 'package:pinput/pinput.dart';
 import '../../../../core/l10n/auth_message_localizer.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
+import '../../../app_pin/domain/pin_flow_source.dart';
 import '../../data/auth_repository.dart';
 import '../../providers/auth_provider.dart';
 
@@ -84,7 +85,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
           .verifyOTP(widget.email, _pinController.text);
       if (!mounted) return;
       ref.invalidate(authProvider);
-      context.go('/home');
+      context.go('/app-pin/create', extra: PinFlowSource.signup);
     } on AuthRepositoryException catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;

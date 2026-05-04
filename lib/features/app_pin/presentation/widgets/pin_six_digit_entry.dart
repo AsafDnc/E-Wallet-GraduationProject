@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/app_pin_rules.dart';
+import '../app_pin_screen_layout.dart';
 
 /// Six read-only [TextField]s with underline style — system keyboard stays closed.
 class PinSixDigitEntry extends StatefulWidget {
@@ -122,7 +123,9 @@ class PinSixDigitEntryState extends State<PinSixDigitEntry> {
       children: List.generate(AppPinRules.pinLength, (i) {
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppPinScreenLayout.digitCellHorizontalPadding,
+            ),
             child: TextField(
               controller: _controllers[i],
               focusNode: _focusNodes[i],
@@ -135,21 +138,30 @@ class PinSixDigitEntryState extends State<PinSixDigitEntry> {
               keyboardType: TextInputType.number,
               style: TextStyle(
                 color: textColor,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1,
+                fontSize: AppPinScreenLayout.digitFontSize,
+                fontWeight: AppPinScreenLayout.digitFontWeight,
+                letterSpacing: AppPinScreenLayout.digitLetterSpacing,
               ),
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding: const EdgeInsets.only(bottom: 6, top: 4),
+                contentPadding: AppPinScreenLayout.pinFieldContentPadding,
                 border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: underlineColor, width: 2),
+                  borderSide: BorderSide(
+                    color: underlineColor,
+                    width: AppPinScreenLayout.underlineBorderWidth,
+                  ),
                 ),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: underlineColor, width: 2),
+                  borderSide: BorderSide(
+                    color: underlineColor,
+                    width: AppPinScreenLayout.underlineBorderWidth,
+                  ),
                 ),
                 focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: underlineColor, width: 2),
+                  borderSide: BorderSide(
+                    color: underlineColor,
+                    width: AppPinScreenLayout.underlineBorderWidth,
+                  ),
                 ),
               ),
             ),
