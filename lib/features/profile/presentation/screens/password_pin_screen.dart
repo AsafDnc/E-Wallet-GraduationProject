@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app_pin/domain/pin_flow_source.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../providers/profile_providers.dart';
 
@@ -63,11 +64,9 @@ class PasswordPinScreen extends ConsumerWidget {
                   Icons.chevron_right_rounded,
                   color: cs.onSurfaceVariant,
                 ),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.passwordPinChangeSoon),
-                    duration: const Duration(seconds: 2),
-                  ),
+                onTap: () => context.push(
+                  '/app-pin/create',
+                  extra: PinFlowSource.settings,
                 ),
               ),
 

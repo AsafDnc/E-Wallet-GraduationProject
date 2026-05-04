@@ -213,8 +213,9 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               keyboardType: TextInputType.emailAddress,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return l10n.fieldRequired;
-                if (!v.contains('@'))
+                if (!v.contains('@')) {
                   return l10n.validationEnterValidEmailShort;
+                }
                 return null;
               },
             ),

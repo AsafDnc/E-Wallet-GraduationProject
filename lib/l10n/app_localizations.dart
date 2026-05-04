@@ -1849,6 +1849,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily Spending Limit'**
   String get dailyLimitsSectionTitle;
+
+  /// No description provided for @appPinCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create PIN'**
+  String get appPinCreateTitle;
+
+  /// No description provided for @appPinCreateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your 6-digit password to secure the app.'**
+  String get appPinCreateSubtitle;
+
+  /// No description provided for @appPinWarningSequential.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid simple sequences (e.g. 123456 or 654321).'**
+  String get appPinWarningSequential;
+
+  /// No description provided for @appPinWarningRepeated.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid using the same digit six times in a row.'**
+  String get appPinWarningRepeated;
+
+  /// No description provided for @appPinConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm PIN'**
+  String get appPinConfirmTitle;
+
+  /// No description provided for @appPinEncryptedFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password is encrypted and stored securely.'**
+  String get appPinEncryptedFooter;
+
+  /// No description provided for @appPinMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN codes do not match.'**
+  String get appPinMismatch;
+
+  /// No description provided for @appPinIncorrectPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password.'**
+  String get appPinIncorrectPassword;
+
+  /// No description provided for @appPinDailyBrand.
+  ///
+  /// In en, this message translates to:
+  /// **'E - Wallet'**
+  String get appPinDailyBrand;
+
+  /// No description provided for @appPinDailyInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'You must enter your password to continue.'**
+  String get appPinDailyInstruction;
+
+  /// No description provided for @appPinForgotPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password? '**
+  String get appPinForgotPrefix;
+
+  /// No description provided for @appPinForgotAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get appPinForgotAction;
+
+  /// No description provided for @appPinResetEmailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'A password reset link has been sent to {email}. (Demo — backend not connected.)'**
+  String appPinResetEmailSent(String email);
+
+  /// No description provided for @appPinSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your PIN has been saved.'**
+  String get appPinSavedMessage;
 }
 
 class _AppLocalizationsDelegate

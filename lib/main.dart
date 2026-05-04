@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/supabase_constants.dart';
 import 'core/network/supabase_init.dart';
+import 'core/lifecycle/app_lifecycle_pin_guard.dart';
 import 'core/network/router.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/providers/theme_provider.dart';
@@ -61,6 +62,9 @@ class MyApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       routerConfig: router,
+      builder: (context, child) {
+        return AppLifecyclePinGuard(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }

@@ -5,8 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_route_observer.dart';
 import 'supabase_init.dart';
 
+import '../../features/app_pin/domain/pin_flow_source.dart';
+import '../../features/app_pin/providers/app_pin_repository_provider.dart';
+import '../../features/app_pin/presentation/app_pin_daily_login_screen.dart';
+import '../../features/app_pin/presentation/confirm_pin_screen.dart';
+import '../../features/app_pin/presentation/create_pin_screen.dart';
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/otp/otp_verification_screen.dart';
 import '../../features/auth/presentation/signup/signup_screen.dart';
@@ -102,16 +108,39 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: _hasSupabaseSession() ? '/home' : '/login',
+    observers: [authRouteObserver],
     refreshListenable: refreshNotifier,
-    redirect: (context, state) {
-      final isLoggedIn = _hasSupabaseSession();
-      final isAuthRoute =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup' ||
-          state.matchedLocation == '/otp';
+    redirect: (context, state) async {
+      if (!supabasePluginReady) {
+        final loc = state.matchedLocation;
+        if (loc != '/login' && loc != '/signup') {
+          return '/login';
+        }
+        return null;
+      }
 
-      if (!isLoggedIn && !isAuthRoute) return '/login';
-      if (isLoggedIn && isAuthRoute) return '/home';
+      final isLoggedIn = _hasSupabaseSession();
+      final loc = state.matchedLocation;
+      final isAuthRoute = loc == '/login' || loc == '/signup' || loc == '/otp';
+      final isPinSetupRoute =
+          loc == '/app-pin/create' || loc == '/app-pin/confirm';
+
+      if (!isLoggedIn) {
+        if (!isAuthRoute) return '/login';
+        return null;
+      }
+
+      final storedPin = await ref.read(appPinRepositoryProvider).readPin();
+      final hasPin = storedPin != null;
+
+      if (!hasPin) {
+        if (isAuthRoute || isPinSetupRoute) {
+          return null;
+        }
+        return '/app-pin/create';
+      }
+
+      if (isAuthRoute) return '/home';
       return null;
     },
     routes: [
@@ -216,6 +245,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _cupertinoNestedPage(
           pageKey: state.pageKey,
           child: const DailyLimitsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/app-pin/create',
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          final source = extra is PinFlowSource ? extra : PinFlowSource.signup;
+          return _cupertinoNestedPage(
+            pageKey: state.pageKey,
+            child: CreatePinScreen(flowSource: source),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/app-pin/confirm',
+        pageBuilder: (context, state) => _cupertinoNestedPage(
+          pageKey: state.pageKey,
+          child: const ConfirmPinScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/app-pin/daily-login',
+        pageBuilder: (context, state) => _cupertinoNestedPage(
+          pageKey: state.pageKey,
+          child: const AppPinDailyLoginScreen(),
         ),
       ),
     ],
