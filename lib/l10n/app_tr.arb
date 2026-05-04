@@ -353,5 +353,24 @@
   "dailyLimitsSubtitleEnabled": "Harcama limiti aştığında uyarı alırsınız",
   "dailyLimitsSubtitleDisabled": "Günlük harcama limiti uygulanmıyor",
   "dailyLimitsInfoBody": "Günlük toplam harcamanız limite yaklaştığında veya aştığında, işlemi onaylamadan önce uygulama içi uyarı alırsınız.",
-  "dailyLimitsSectionTitle": "Günlük Harcama Limiti"
+  "dailyLimitsSectionTitle": "Günlük Harcama Limiti",
+  "appPinCreateTitle": "PIN Oluştur",
+  "appPinCreateSubtitle": "Uygulamayı güvence altına almak için 6 haneli şifrenizi girin.",
+  "appPinWarningSequential": "Basit ardışık dizilerden kaçının (ör. 123456 veya 654321).",
+  "appPinWarningRepeated": "Aynı rakamı altı kez tekrarlamayın.",
+  "appPinConfirmTitle": "PIN'i Onayla",
+  "appPinEncryptedFooter": "Şifreniz şifrelenir ve güvenli şekilde saklanır.",
+  "appPinMismatch": "PIN kodları eşleşmiyor.",
+  "appPinIncorrectPassword": "Hatalı şifre.",
+  "appPinDailyBrand": "E - Wallet",
+  "appPinDailyInstruction": "Devam etmek için şifrenizi girmeniz gerekir.",
+  "appPinForgotPrefix": "Şifrenizi mi unuttunuz? ",
+  "appPinForgotAction": "Şifreyi sıfırla",
+  "appPinResetEmailSent": "{email} adresine şifre sıfırlama bağlantısı gönderildi. (Demo — arka uç henüz bağlı değil.)",
+  "@appPinResetEmailSent": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "appPinSavedMessage": "PIN'iniz kaydedildi."
 }

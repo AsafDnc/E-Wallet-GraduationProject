@@ -353,5 +353,24 @@
   "dailyLimitsSubtitleEnabled": "You will be alerted when spending exceeds the limit",
   "dailyLimitsSubtitleDisabled": "No daily spending limit is enforced",
   "dailyLimitsInfoBody": "When your total daily spending approaches or exceeds the limit, you will receive an in-app alert before confirming a transaction.",
-  "dailyLimitsSectionTitle": "Daily Spending Limit"
+  "dailyLimitsSectionTitle": "Daily Spending Limit",
+  "appPinCreateTitle": "Create PIN",
+  "appPinCreateSubtitle": "Enter your 6-digit password to secure the app.",
+  "appPinWarningSequential": "Avoid simple sequences (e.g. 123456 or 654321).",
+  "appPinWarningRepeated": "Avoid using the same digit six times in a row.",
+  "appPinConfirmTitle": "Confirm PIN",
+  "appPinEncryptedFooter": "Your password is encrypted and stored securely.",
+  "appPinMismatch": "PIN codes do not match.",
+  "appPinIncorrectPassword": "Incorrect password.",
+  "appPinDailyBrand": "E - Wallet",
+  "appPinDailyInstruction": "You must enter your password to continue.",
+  "appPinForgotPrefix": "Forgot your password? ",
+  "appPinForgotAction": "Reset password",
+  "appPinResetEmailSent": "A password reset link has been sent to {email}. (Demo — backend not connected.)",
+  "@appPinResetEmailSent": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "appPinSavedMessage": "Your PIN has been saved."
 }

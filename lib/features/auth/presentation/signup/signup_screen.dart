@@ -196,7 +196,10 @@ class _SignUpHeader extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                Navigator.of(context).maybePop();
+              },
               icon: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
               splashRadius: 24,
             ),
@@ -270,13 +273,20 @@ class _SignUpFormSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
+    const topRadius = 36.0;
+    final bottomRadius = keyboardBottom > 0 ? 14.0 : 0.0;
+
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      clipBehavior: keyboardBottom > 0 ? Clip.antiAlias : Clip.none,
+      decoration: BoxDecoration(
         color: _darkBg,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(36),
-          topRight: Radius.circular(36),
+          topLeft: const Radius.circular(topRadius),
+          topRight: const Radius.circular(topRadius),
+          bottomLeft: Radius.circular(bottomRadius),
+          bottomRight: Radius.circular(bottomRadius),
         ),
       ),
       child: SingleChildScrollView(
@@ -415,7 +425,10 @@ class _SignInPrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
-      onTap: () => Navigator.of(context).maybePop(),
+      onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+        Navigator.of(context).maybePop();
+      },
       child: Text.rich(
         TextSpan(
           text: l10n.signUpAlreadyHaveAccount,

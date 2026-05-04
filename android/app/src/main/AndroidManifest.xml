@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for release/profile standalone installs (debug manifest alone is not merged). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- No flutter_secure_storage in this project. If you add it, consider
+         android:allowBackup="false" on <application> so backups do not expose secrets. -->
     <application
         android:label="e_wallet"
         android:name="${applicationName}"

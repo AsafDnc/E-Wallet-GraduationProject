@@ -968,4 +968,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyLimitsSectionTitle => 'Daily Spending Limit';
+
+  @override
+  String get appPinCreateTitle => 'Create PIN';
+
+  @override
+  String get appPinCreateSubtitle =>
+      'Enter your 6-digit password to secure the app.';
+
+  @override
+  String get appPinWarningSequential =>
+      'Avoid simple sequences (e.g. 123456 or 654321).';
+
+  @override
+  String get appPinWarningRepeated =>
+      'Avoid using the same digit six times in a row.';
+
+  @override
+  String get appPinConfirmTitle => 'Confirm PIN';
+
+  @override
+  String get appPinEncryptedFooter =>
+      'Your password is encrypted and stored securely.';
+
+  @override
+  String get appPinMismatch => 'PIN codes do not match.';
+
+  @override
+  String get appPinIncorrectPassword => 'Incorrect password.';
+
+  @override
+  String get appPinDailyBrand => 'E - Wallet';
+
+  @override
+  String get appPinDailyInstruction =>
+      'You must enter your password to continue.';
+
+  @override
+  String get appPinForgotPrefix => 'Forgot your password? ';
+
+  @override
+  String get appPinForgotAction => 'Reset password';
+
+  @override
+  String appPinResetEmailSent(String email) {
+    return 'A password reset link has been sent to $email. (Demo — backend not connected.)';
+  }
+
+  @override
+  String get appPinSavedMessage => 'Your PIN has been saved.';
 }
