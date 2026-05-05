@@ -41,6 +41,7 @@ class PinShakeWrapperState extends State<PinShakeWrapper>
   Future<void> shake() async {
     if (!mounted) return;
     await _controller.forward(from: 0);
+    if (!mounted) return;
   }
 
   @override

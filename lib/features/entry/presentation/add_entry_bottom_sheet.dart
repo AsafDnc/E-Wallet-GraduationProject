@@ -285,9 +285,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                               ),
                               onPressed: () {
                                 Navigator.of(ctx).pop();
-                                if (mounted) {
-                                  setState(() => _date = draft);
-                                }
+                                if (!mounted) return;
+                                setState(() => _date = draft);
                               },
                               child: Text(
                                 AppLocalizations.of(ctx)!.commonDone,
@@ -351,7 +350,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         selected: _category,
       ),
     );
-    if (result != null && mounted) setState(() => _category = result);
+    if (result == null || !mounted) return;
+    setState(() => _category = result);
   }
 
   Future<void> _pickWallet({bool isDestination = false}) async {
@@ -371,15 +371,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             : AppLocalizations.of(context)!.entryWalletFromTitle,
       ),
     );
-    if (result != null && mounted) {
-      setState(() {
-        if (isDestination) {
-          _selectedToWalletId = result;
-        } else {
-          _selectedWalletId = result;
-        }
-      });
-    }
+    if (result == null || !mounted) return;
+    setState(() {
+      if (isDestination) {
+        _selectedToWalletId = result;
+      } else {
+        _selectedWalletId = result;
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -414,6 +413,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   transferToWalletId: toId,
                 ),
               );
+          if (!mounted) return;
         } catch (e, st) {
           assert(() {
             debugPrint('AddTransactionSheet: transfer save failed: $e\n$st');
@@ -427,18 +427,20 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             (w) => w.id == _selectedWalletId,
             orElse: () => wallets.first,
           );
-          ref
+          await ref
               .read(walletsProvider.notifier)
               .adjustBalance(_selectedWalletId!, src.balance - amount);
+          if (!mounted) return;
         }
         if (_selectedToWalletId != null) {
           final dst = wallets.firstWhere(
             (w) => w.id == _selectedToWalletId,
             orElse: () => wallets.first,
           );
-          ref
+          await ref
               .read(walletsProvider.notifier)
               .adjustBalance(_selectedToWalletId!, dst.balance + amount);
+          if (!mounted) return;
         }
       }
     } else {
@@ -466,6 +468,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 walletId: walletId,
               ),
             );
+        if (!mounted) return;
       } catch (e, st) {
         assert(() {
           debugPrint('AddTransactionSheet: transaction save failed: $e\n$st');
@@ -475,7 +478,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       }
     }
 
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   // ─── Wallet label helpers ──────────────────────────────────────────────────

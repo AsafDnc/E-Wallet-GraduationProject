@@ -29,6 +29,7 @@ class _UpcomingSubsWidgetState extends ConsumerState<UpcomingSubsWidget> {
   Future<void> _load() async {
     try {
       await ref.read(subscriptionsProvider.notifier).loadSubscriptions();
+      if (!mounted) return;
     } catch (_) {
       if (!mounted) return;
     }

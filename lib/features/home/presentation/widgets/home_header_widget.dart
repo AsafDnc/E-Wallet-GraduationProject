@@ -96,90 +96,50 @@ class _BalanceRow extends StatefulWidget {
 }
 
 class _BalanceRowState extends State<_BalanceRow> {
-  String? _cachedWidthKey;
-  double? _cachedVisibleWidth;
-
-  String get _formattedBalance => widget.balance.formattedCompact;
-
-  /// Digit characters of the balance magnitude (sizes the masked asterisks).
-  String get _digitsOnly => widget.balance.abs().toStringAsFixed(0);
-
   @override
   Widget build(BuildContext context) {
-    // The SizedBox is always sized to the visible formatted balance so the
-    // badge and eye icon never shift regardless of visibility state.
-    final formatted = _formattedBalance;
-    if (_cachedWidthKey != formatted) {
-      _cachedWidthKey = formatted;
-      _cachedVisibleWidth = _measureTextWidth(formatted, _balanceStyle);
-    }
-    final visibleWidth = _cachedVisibleWidth!;
-
     final textColor = Theme.of(context).colorScheme.onSurface;
     final themedBalanceStyle = _balanceStyle.copyWith(color: textColor);
+    final formatted = widget.balance.formattedCompact;
+    final masked =
+        '$appCurrencySymbolSpaced${'*' * widget.balance.abs().toStringAsFixed(0).length}';
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: visibleWidth,
-          child: Stack(
-            children: [
-              // Invisible anchor holds the layout width constant.
-              Opacity(
-                opacity: 0.0,
-                child: Text(
-                  _formattedBalance,
-                  style: themedBalanceStyle,
-                  maxLines: 1,
-                ),
-              ),
-              // Visible layer: real balance or masked.
-              Text(
-                widget.isVisible
-                    ? formatted
-                    : '$appCurrencySymbolSpaced${'*' * _digitsOnly.length}',
-                style: themedBalanceStyle,
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-              ),
-            ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            widget.isVisible ? formatted : masked,
+            style: themedBalanceStyle,
+            maxLines: 1,
+            overflow: TextOverflow.fade,
+            softWrap: false,
           ),
-        ),
-        const SizedBox(width: 6),
-        _PercentBadge(percent: widget.changePercent),
-        const SizedBox(width: 5),
-        GestureDetector(
-          onTap: widget.onToggleVisibility,
-          child: Icon(
-            widget.isVisible
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            size: 22,
+          const SizedBox(width: 8),
+          _PercentBadge(percent: widget.changePercent),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: widget.onToggleVisibility,
+            child: Icon(
+              widget.isVisible
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 22,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // Constructed in build(); kept as field to avoid recreating on each frame.
   static const _balanceStyle = TextStyle(
     fontSize: 44,
     fontWeight: FontWeight.bold,
     letterSpacing: -0.5,
   );
-
-  /// Measures the pixel width of [text] rendered with [style].
-  double _measureTextWidth(String text, TextStyle style) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    )..layout();
-    return painter.width;
-  }
 }
 
 class _PercentBadge extends StatelessWidget {

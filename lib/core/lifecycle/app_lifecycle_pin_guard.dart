@@ -72,34 +72,38 @@ class _AppLifecyclePinGuardState extends ConsumerState<AppLifecyclePinGuard>
   }
 
   Future<void> _evaluateResumeLock() async {
-    if (!supabasePluginReady) {
-      return;
-    }
+    try {
+      if (!supabasePluginReady) {
+        return;
+      }
 
-    if (!_hasSupabaseSession()) {
-      return;
-    }
+      if (!_hasSupabaseSession()) {
+        return;
+      }
 
-    if (!ref.read(requirePinProvider)) {
-      return;
-    }
+      if (!ref.read(requirePinProvider)) {
+        return;
+      }
 
-    final storedPin = await ref.read(appPinRepositoryProvider).readPin();
-    if (!mounted || storedPin == null) {
-      return;
-    }
+      final storedPin = await ref.read(appPinRepositoryProvider).readPin();
+      if (!mounted || storedPin == null) {
+        return;
+      }
 
-    final router = ref.read(routerProvider);
-    final location = router.state.matchedLocation;
-    if (_shouldSkipPinResumeLock(location)) {
-      return;
-    }
+      final router = ref.read(routerProvider);
+      final location = router.state.matchedLocation;
+      if (_shouldSkipPinResumeLock(location)) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
-    }
+      if (!mounted) {
+        return;
+      }
 
-    router.push('/app-pin/daily-login');
+      router.push('/app-pin/daily-login');
+    } catch (e, st) {
+      debugPrint('AppLifecyclePinGuard._evaluateResumeLock failed: $e\n$st');
+    }
   }
 
   bool _shouldSkipPinResumeLock(String location) {

@@ -111,37 +111,47 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: [authRouteObserver],
     refreshListenable: refreshNotifier,
     redirect: (context, state) async {
-      if (!supabasePluginReady) {
-        final loc = state.matchedLocation;
-        if (loc != '/login' && loc != '/signup') {
-          return '/login';
-        }
-        return null;
-      }
-
-      final isLoggedIn = _hasSupabaseSession();
-      final loc = state.matchedLocation;
-      final isAuthRoute = loc == '/login' || loc == '/signup' || loc == '/otp';
-      final isPinSetupRoute =
-          loc == '/app-pin/create' || loc == '/app-pin/confirm';
-
-      if (!isLoggedIn) {
-        if (!isAuthRoute) return '/login';
-        return null;
-      }
-
-      final storedPin = await ref.read(appPinRepositoryProvider).readPin();
-      final hasPin = storedPin != null;
-
-      if (!hasPin) {
-        if (isAuthRoute || isPinSetupRoute) {
+      try {
+        if (!supabasePluginReady) {
+          final loc = state.matchedLocation;
+          if (loc != '/login' && loc != '/signup') {
+            return '/login';
+          }
           return null;
         }
-        return '/app-pin/create';
-      }
 
-      if (isAuthRoute) return '/home';
-      return null;
+        final isLoggedIn = _hasSupabaseSession();
+        final loc = state.matchedLocation;
+        final isAuthRoute =
+            loc == '/login' || loc == '/signup' || loc == '/otp';
+        final isPinSetupRoute =
+            loc == '/app-pin/create' || loc == '/app-pin/confirm';
+
+        if (!isLoggedIn) {
+          if (!isAuthRoute) return '/login';
+          return null;
+        }
+
+        final storedPin = await ref.read(appPinRepositoryProvider).readPin();
+        final hasPin = storedPin != null;
+
+        if (!hasPin) {
+          if (isAuthRoute || isPinSetupRoute) {
+            return null;
+          }
+          return '/app-pin/create';
+        }
+
+        if (isAuthRoute) return '/home';
+        return null;
+      } catch (e, st) {
+        debugPrint('GoRouter redirect failed: $e\n$st');
+        final loc = state.matchedLocation;
+        if (loc == '/login' || loc == '/signup') {
+          return null;
+        }
+        return '/login';
+      }
     },
     routes: [
       GoRoute(

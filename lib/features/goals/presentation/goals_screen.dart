@@ -27,6 +27,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   Future<void> _load() async {
     try {
       await ref.read(goalsProvider.notifier).loadGoals();
+      if (!mounted) return;
     } catch (_) {
       if (!mounted) return;
     }
@@ -35,6 +36,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   Future<void> _onDelete(String id) async {
     try {
       await ref.read(goalsProvider.notifier).deleteGoal(id);
+      if (!mounted) return;
       HapticFeedback.heavyImpact();
     } catch (_) {
       if (!mounted) return;
