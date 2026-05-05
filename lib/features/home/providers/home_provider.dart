@@ -47,43 +47,75 @@ class HomeState {
 // ---------------------------------------------------------------------------
 
 class HomeNotifier extends Notifier<HomeState> {
+  static const List<(int, double)> _defaultSpending = [
+    (0, 200),
+    (1, 350),
+    (2, 420),
+    (3, 310),
+    (4, 500),
+    (5, 680),
+  ];
+
+  /// Off–ledger adjustments (e.g. transactions without a linked wallet).
+  double _unlinkedLedger = 0;
+
+  bool _isBalanceVisible = true;
+
   @override
   HomeState build() {
-    final initialSum = ref
-        .read(walletsProvider)
-        .fold<double>(0, (double s, WalletEntry w) => s + w.balance);
-
-    ref.listen<List<WalletEntry>>(walletsProvider, (previous, next) {
-      final nextSum = next.fold<double>(
-        0,
-        (double s, WalletEntry w) => s + w.balance,
-      );
-      state = state.copyWith(balance: nextSum);
-    });
+    final wallets = ref.watch(walletsProvider);
+    final mode = ref.watch(balanceViewModeProvider);
+    final walletTotal = _sumForViewMode(wallets, mode);
+    final displayBalance = walletTotal + _unlinkedLedger;
 
     return HomeState(
-      balance: initialSum,
+      balance: displayBalance,
       balanceChangePercent: 5.2,
-      isBalanceVisible: true,
-      spendingFlowData: const [
-        (0, 200),
-        (1, 350),
-        (2, 420),
-        (3, 310),
-        (4, 500),
-        (5, 680),
-      ],
+      isBalanceVisible: _isBalanceVisible,
+      spendingFlowData: _defaultSpending,
     );
+  }
+
+  double _sumForViewMode(List<WalletEntry> wallets, BalanceViewMode mode) {
+    switch (mode) {
+      case BalanceViewMode.netWorth:
+        return wallets.fold<double>(
+          0,
+          (double s, WalletEntry w) => s + w.balance,
+        );
+      case BalanceViewMode.totalCash:
+        return wallets
+            .where((WalletEntry w) => w.balance > 0)
+            .fold<double>(0, (double s, WalletEntry w) => s + w.balance);
+    }
   }
 
   /// Toggles the balance visibility (eye icon tap).
   void toggleBalanceVisibility() {
-    state = state.copyWith(isBalanceVisible: !state.isBalanceVisible);
+    _isBalanceVisible = !_isBalanceVisible;
+    final wallets = ref.read(walletsProvider);
+    final mode = ref.read(balanceViewModeProvider);
+    final current = state;
+    state = HomeState(
+      balance: _sumForViewMode(wallets, mode) + _unlinkedLedger,
+      balanceChangePercent: current.balanceChangePercent,
+      isBalanceVisible: _isBalanceVisible,
+      spendingFlowData: current.spendingFlowData,
+    );
   }
 
   /// Applies a signed delta when a transaction has no linked wallet (legacy).
   void adjustBalance(double delta) {
-    state = state.copyWith(balance: state.balance + delta);
+    _unlinkedLedger += delta;
+    final wallets = ref.read(walletsProvider);
+    final mode = ref.read(balanceViewModeProvider);
+    final current = state;
+    state = HomeState(
+      balance: _sumForViewMode(wallets, mode) + _unlinkedLedger,
+      balanceChangePercent: current.balanceChangePercent,
+      isBalanceVisible: current.isBalanceVisible,
+      spendingFlowData: current.spendingFlowData,
+    );
   }
 }
 

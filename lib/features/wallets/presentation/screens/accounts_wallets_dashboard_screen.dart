@@ -44,7 +44,8 @@ class _AccountsWalletsDashboardScreenState
   void initState() {
     super.initState();
     Future<void>.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) setState(() => _txShimmer = false);
+      if (!mounted) return;
+      setState(() => _txShimmer = false);
     });
   }
 
@@ -876,7 +877,8 @@ class _FilterBarState extends State<_FilterBar> {
     // Brief delay lets the position animation start before the keyboard
     // animation begins — prevents a jarring layout jump on slower devices.
     Future.delayed(const Duration(milliseconds: 60), () {
-      if (mounted) _focusNode.requestFocus();
+      if (!mounted) return;
+      _focusNode.requestFocus();
     });
   }
 
@@ -884,7 +886,8 @@ class _FilterBarState extends State<_FilterBar> {
     _focusNode.unfocus();
     _textCtrl.clear();
     widget.onSearch('');
-    if (mounted) setState(() => _isSearching = false);
+    if (!mounted) return;
+    setState(() => _isSearching = false);
   }
 
   @override

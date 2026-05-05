@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../subscriptions/providers/subscriptions_provider.dart';
 import '../../../shared/widgets/floating_bottom_nav.dart';
 import 'widgets/ai_bot_card_widget.dart';
 import 'widgets/home_header_widget.dart';
@@ -28,7 +30,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  /// When true, heavy widgets (chart, lists with Slidable, etc.) are built.
+  /// When true, heavy widgets (chart, lists with Dismissible, etc.) are built.
   bool _heavyContentReady = false;
 
   static const double _navBarHeight = 90;
@@ -39,9 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // Let the first frame + GPU settle before running fl_chart / Slidable.
+      // Let the first frame + GPU settle before running fl_chart / Dismissible.
       Future<void>.delayed(const Duration(milliseconds: 280), () {
-        if (mounted) setState(() => _heavyContentReady = true);
+        if (!mounted) return;
+        setState(() => _heavyContentReady = true);
       });
     });
   }
@@ -114,10 +117,24 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 28),
-            RepaintBoundary(
-              child: const UpcomingSubsWidget(horizontalPadding: _hPad),
+            Consumer(
+              builder: (context, ref, _) {
+                final subscriptions = ref.watch(subscriptionsProvider);
+                if (subscriptions.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RepaintBoundary(
+                      child: const UpcomingSubsWidget(horizontalPadding: _hPad),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 24),
             RepaintBoundary(
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: _hPad),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -32,19 +31,17 @@ class _WalletActionSheet extends ConsumerStatefulWidget {
 }
 
 class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
-  late bool _isDefault;
-
-  @override
-  void initState() {
-    super.initState();
-    _isDefault = widget.wallet.isDefault;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final syncedWallet = ref
+        .watch(walletsProvider)
+        .firstWhere(
+          (w) => w.id == widget.wallet.id,
+          orElse: () => widget.wallet,
+        );
 
     return Container(
       decoration: BoxDecoration(
@@ -180,13 +177,18 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
                   ),
                 ),
                 Switch(
-                  value: _isDefault,
-                  onChanged: (val) {
-                    setState(() => _isDefault = val);
-                    if (val) {
-                      ref
-                          .read(walletsProvider.notifier)
-                          .setDefault(widget.wallet.id);
+                  value: syncedWallet.isDefault,
+                  onChanged: (val) async {
+                    if (!val) return;
+                    final messenger = ScaffoldMessenger.maybeOf(context);
+                    final ok = await ref
+                        .read(walletsProvider.notifier)
+                        .setDefault(widget.wallet.id);
+                    if (!mounted) return;
+                    if (!ok && messenger != null) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(l10n.authErrUnexpected)),
+                      );
                     }
                   },
                   activeThumbColor: cs.primary,
@@ -255,11 +257,19 @@ class _WalletActionSheetState extends ConsumerState<_WalletActionSheet> {
             ),
             TextButton(
               style: TextButton.styleFrom(foregroundColor: cs.error),
-              onPressed: () {
-                ref
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.maybeOf(context);
+                final ok = await ref
                     .read(walletsProvider.notifier)
                     .deleteWallet(widget.wallet.id);
+                if (!ctx.mounted) return;
                 Navigator.of(ctx).pop();
+                if (!mounted) return;
+                if (!ok && messenger != null) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.authErrUnexpected)),
+                  );
+                }
               },
               child: Text(l10n.commonDelete),
             ),
@@ -328,14 +338,21 @@ void _showEditSheet(BuildContext context, WidgetRef ref, WalletEntry wallet) {
               ),
               const SizedBox(height: 20),
               FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final name = nameCtrl.text.trim();
-                  if (name.isNotEmpty) {
-                    ref
-                        .read(walletsProvider.notifier)
-                        .updateWallet(wallet.copyWith(name: name));
+                  if (name.isEmpty) return;
+                  final messenger = ScaffoldMessenger.maybeOf(ctx);
+                  final ok = await ref
+                      .read(walletsProvider.notifier)
+                      .updateWallet(wallet.copyWith(name: name));
+                  if (!ctx.mounted) return;
+                  Navigator.of(ctx).pop();
+                  if (!context.mounted) return;
+                  if (!ok && messenger != null) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.authErrUnexpected)),
+                    );
                   }
-                  if (ctx.mounted) ctx.pop();
                 },
                 child: Text(l10n.walletSaveChanges),
               ),
@@ -344,7 +361,7 @@ void _showEditSheet(BuildContext context, WidgetRef ref, WalletEntry wallet) {
         ),
       );
     },
-  );
+  ).whenComplete(nameCtrl.dispose);
 }
 
 // ─── Adjust balance bottom sheet ──────────────────────────────────────────
@@ -429,16 +446,23 @@ void _showAdjustBalanceSheet(
               ),
               const SizedBox(height: 20),
               FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final parsed = double.tryParse(
                     balanceCtrl.text.trim().replaceAll(',', '.'),
                   );
-                  if (parsed != null) {
-                    ref
-                        .read(walletsProvider.notifier)
-                        .adjustBalance(wallet.id, parsed);
+                  if (parsed == null) return;
+                  final messenger = ScaffoldMessenger.maybeOf(ctx);
+                  final ok = await ref
+                      .read(walletsProvider.notifier)
+                      .adjustBalance(wallet.id, parsed);
+                  if (!ctx.mounted) return;
+                  Navigator.of(ctx).pop();
+                  if (!context.mounted) return;
+                  if (!ok && messenger != null) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.authErrUnexpected)),
+                    );
                   }
-                  if (ctx.mounted) ctx.pop();
                 },
                 child: Text(l10n.walletUpdateBalance),
               ),
@@ -447,7 +471,7 @@ void _showAdjustBalanceSheet(
         ),
       );
     },
-  );
+  ).whenComplete(balanceCtrl.dispose);
 }
 
 // ─── Shared tile ─────────────────────────────────────────────────────────────

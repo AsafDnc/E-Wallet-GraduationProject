@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/wallets_supabase_repository.dart';
 import '../../domain/models/wallet_entry_model.dart';
 
 // ─── Mock seed data ────────────────────────────────────────────────────────
@@ -37,32 +38,73 @@ final _mockWallets = <WalletEntry>[
 
 class WalletsNotifier extends Notifier<List<WalletEntry>> {
   @override
-  List<WalletEntry> build() => List.from(_mockWallets);
+  List<WalletEntry> build() => List<WalletEntry>.from(_mockWallets);
 
   void addWallet(WalletEntry wallet) {
     state = [...state, wallet];
   }
 
-  void updateWallet(WalletEntry updated) {
+  /// Persists then updates local list; rolls back on failure.
+  Future<bool> updateWallet(WalletEntry updated) async {
+    final previous = List<WalletEntry>.from(state);
     state = [
       for (final w in state)
         if (w.id == updated.id) updated else w,
     ];
+    try {
+      await ref.read(walletsSupabaseRepositoryProvider).updateWallet(updated);
+      return true;
+    } catch (e, st) {
+      debugPrint('WalletsNotifier.updateWallet failed: $e\n$st');
+      state = previous;
+      return false;
+    }
   }
 
-  void deleteWallet(String id) {
+  /// Removes locally and from Supabase; restores on failure.
+  Future<bool> deleteWallet(String id) async {
+    final previous = List<WalletEntry>.from(state);
     state = state.where((w) => w.id != id).toList();
+    try {
+      await ref.read(walletsSupabaseRepositoryProvider).deleteWallet(id);
+      return true;
+    } catch (e, st) {
+      debugPrint('WalletsNotifier.deleteWallet failed: $e\n$st');
+      state = previous;
+      return false;
+    }
   }
 
-  void setDefault(String id) {
+  Future<bool> setDefault(String id) async {
+    final previous = List<WalletEntry>.from(state);
     state = [for (final w in state) w.copyWith(isDefault: w.id == id)];
+    try {
+      await ref.read(walletsSupabaseRepositoryProvider).setDefaultWallet(id);
+      return true;
+    } catch (e, st) {
+      debugPrint('WalletsNotifier.setDefault failed: $e\n$st');
+      state = previous;
+      return false;
+    }
   }
 
-  void adjustBalance(String id, double newBalance) {
+  Future<bool> adjustBalance(String id, double newBalance) async {
+    final previous = List<WalletEntry>.from(state);
+    final idx = state.indexWhere((w) => w.id == id);
+    if (idx < 0) return false;
+    final updated = state[idx].copyWith(balance: newBalance);
     state = [
       for (final w in state)
-        if (w.id == id) w.copyWith(balance: newBalance) else w,
+        if (w.id == id) updated else w,
     ];
+    try {
+      await ref.read(walletsSupabaseRepositoryProvider).updateWallet(updated);
+      return true;
+    } catch (e, st) {
+      debugPrint('WalletsNotifier.adjustBalance failed: $e\n$st');
+      state = previous;
+      return false;
+    }
   }
 
   /// Adds [signedDelta] to the wallet's current balance (no-op if id missing).
@@ -105,18 +147,24 @@ final balanceViewModeProvider =
 
 // ─── Calculated balance ────────────────────────────────────────────────────
 
+double _sumForViewMode(List<WalletEntry> wallets, BalanceViewMode mode) {
+  switch (mode) {
+    case BalanceViewMode.netWorth:
+      return wallets.fold<double>(
+        0,
+        (double s, WalletEntry w) => s + w.balance,
+      );
+    case BalanceViewMode.totalCash:
+      return wallets
+          .where((WalletEntry w) => w.balance > 0)
+          .fold<double>(0, (double s, WalletEntry w) => s + w.balance);
+  }
+}
+
 final calculatedBalanceProvider = Provider<double>((ref) {
   final wallets = ref.watch(walletsProvider);
   final mode = ref.watch(balanceViewModeProvider);
-
-  switch (mode) {
-    case BalanceViewMode.netWorth:
-      return wallets.fold(0.0, (sum, w) => sum + w.balance);
-    case BalanceViewMode.totalCash:
-      return wallets
-          .where((w) => w.balance > 0)
-          .fold(0.0, (sum, w) => sum + w.balance);
-  }
+  return _sumForViewMode(wallets, mode);
 });
 
 // ─── Balance visibility ────────────────────────────────────────────────────

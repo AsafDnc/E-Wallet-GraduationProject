@@ -84,6 +84,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     behavior: SnackBarBehavior.floating,
